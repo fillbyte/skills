@@ -79,7 +79,7 @@
     "verify:docs": "tsx scripts/verify-doc-links.ts"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "1.30.0",
+    "@modelcontextprotocol/sdk": "1.30.1",
     "zod": "4.5.4"
   },
   "devDependencies": {
