@@ -42,9 +42,9 @@ describe("capability registry", () => {
     const expected = ["swift", "swift-concurrency", "swiftui", "uikit", "foundation"];
     for (const id of expected) {
       const record = await findRecord(id);
-      expect(record).toMatchObject({ id, stable_or_beta: "stable", last_verified_at: "2026-08-30" });
+      expect(record).toMatchObject({ id, stable_or_beta: "stable", last_verified_at: "2026-09-30" });
       expect(record?.official_documentation.length).toBeGreaterThan(0);
-      expect(record?.sdk_availability).toContain("Xcode 27 was not locally installed");
+      expect(record?.sdk_availability).toMatch(/Xcode 27|iOS 27 SDK/);
     }
 
     expect((await findRecord("swift-concurrency"))?.minimum_os_version.iOS).toBe("13.0");
@@ -64,10 +64,10 @@ describe("capability registry", () => {
     ];
     for (const id of expected) {
       const record = await findRecord(id);
-      expect(record).toMatchObject({ id, stable_or_beta: "stable", last_verified_at: "2026-08-30" });
+      expect(record).toMatchObject({ id, stable_or_beta: "stable", last_verified_at: "2026-09-30" });
       expect(record?.official_documentation.length).toBeGreaterThan(0);
       expect(record?.sdk_availability).toContain("Xcode 26.6 and SDK 26.5");
-      expect(record?.sdk_availability).toContain("Xcode 27 was not locally installed");
+      expect(record?.sdk_availability).toMatch(/Xcode 27|iOS 27 SDK/);
       expect(record?.knowledge_state.completeness).toBe("partial");
       expect(record?.knowledge_state.fields.region_restrictions).toBe("unknown");
     }
@@ -130,12 +130,13 @@ describe("capability registry", () => {
     for (const id of expected) {
       const record = await findRecord(id);
       expect(record).toMatchObject({ id, stable_or_beta: "stable" });
-      expect(record?.last_verified_at).toBe(["avfoundation", "photokit"].includes(id) ? "2026-08-31" : "2026-08-30");
+      expect(record?.last_verified_at).toBe("2026-09-30");
       expect(record?.official_documentation.length).toBeGreaterThan(0);
       expect(record?.sdk_availability).toContain("Xcode 26.6 and SDK 26.5");
-      expect(record?.sdk_availability).toContain("Xcode 27 was not locally installed");
+      expect(record?.sdk_availability).toMatch(/Xcode 27|iOS 27 SDK/);
       expect(record?.knowledge_state.completeness).toBe("partial");
-      if (id !== "mapkit") expect(record?.knowledge_state.fields.region_restrictions).toBe("unknown");
+      if (!["mapkit", "apptrackingtransparency"].includes(id))
+        expect(record?.knowledge_state.fields.region_restrictions).toBe("unknown");
     }
 
     const apns = await findRecord("apns");
@@ -239,10 +240,10 @@ describe("capability registry", () => {
     ];
     for (const id of expected) {
       const record = await findRecord(id);
-      expect(record).toMatchObject({ id, stable_or_beta: "stable", last_verified_at: "2026-08-31" });
+      expect(record).toMatchObject({ id, stable_or_beta: "stable", last_verified_at: "2026-09-30" });
       expect(record?.official_documentation.length).toBeGreaterThan(0);
       expect(record?.sdk_availability).toContain("Xcode 26.6 and SDK 26.5");
-      expect(record?.sdk_availability).toContain("Xcode 27 was not locally installed");
+      expect(record?.sdk_availability).toMatch(/Xcode 27|iOS 27 SDK/);
       expect(record?.knowledge_state.completeness).toBe("partial");
       expect(record?.knowledge_state.fields.privacy_manifest_requirements).toBe("verified_value");
       expect(record?.knowledge_state.fields.required_reason_apis).toBe("verified_none");
@@ -348,7 +349,7 @@ describe("capability registry", () => {
 
   it("resolves every committed catalog technology by its exact id", async () => {
     const catalog = await loadTechnologyCatalog();
-    expect(catalog).toHaveLength(193);
+    expect(catalog).toHaveLength(203);
     for (const entry of catalog) {
       expect(await findTechnologyCatalogEntry(entry.id)).toEqual(entry);
     }

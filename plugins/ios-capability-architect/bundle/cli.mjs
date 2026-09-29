@@ -14,7 +14,7 @@ import { parseArgs } from "node:util";
 // data/capabilities.json
 var capabilities_default = {
   schema_version: "1.0",
-  generated_at: "2026-08-31T00:00:00.000Z",
+  generated_at: "2026-09-30T00:00:00.000Z",
   records: [
     {
       id: "healthkit",
@@ -26,12 +26,16 @@ var capabilities_default = {
       supported_use_cases: [
         "Read user-authorized health samples",
         "Write user-authorized health samples",
-        "Observe selected sample changes"
+        "Observe selected sample changes",
+        "Read and write iOS 27 heart-rate and cycling-power workout zone data",
+        "Read and write iOS 27 menopausal-state and bleeding-after-menopause category samples"
       ],
       unsupported_use_cases: [
         "Inferring whether read access was denied",
         "Using HealthKit data for advertising",
-        "Guaranteed execution while a device is locked"
+        "Guaranteed execution while a device is locked",
+        "Assuming full-history read access on iOS 27 and later",
+        "Adopting iOS 27 sample types or workout zones on iOS 26 or earlier targets without availability checks"
       ],
       platforms: ["iOS", "iPadOS", "macOS", "watchOS", "visionOS"],
       minimum_os_version: {
@@ -70,12 +74,16 @@ var capabilities_default = {
       ],
       implementation_notes: [
         "Call HKHealthStore.isHealthDataAvailable() before other HealthKit APIs",
-        "Treat missing samples as unknown rather than evidence of denied read permission"
+        "Treat missing samples as unknown rather than evidence of denied read permission",
+        "On iOS 27 and later, people can grant a limited recent window of history; call getEarliestAuthorizedSampleDate(for:completion:) after requesting authorization and query from the returned date",
+        "Gate iOS 27 additions such as HKWorkoutZoneGroup and the menopause category types behind availability checks"
       ],
       limitations: [
         "Background reads may fail while the device is locked",
         "Authorization can change outside the app",
-        "The framework can link on iPadOS 16 and earlier and on macOS, but those platforms don't provide a HealthKit store"
+        "The framework can link on iPadOS 16 and earlier and on macOS, but those platforms don't provide a HealthKit store",
+        "Read access to sample types can be limited to a recent window; missing older samples do not prove they don't exist",
+        "Full access and denied read access still cannot be told apart"
       ],
       keywords: ["health", "sleep", "workout", "heart", "fitness", "medical", "healthkit"],
       official_documentation: [
@@ -83,22 +91,42 @@ var capabilities_default = {
           title: "HealthKit",
           url: "https://developer.apple.com/documentation/healthkit/",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "Protecting user privacy",
           url: "https://developer.apple.com/documentation/healthkit/protecting-user-privacy",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "About the HealthKit framework",
           url: "https://developer.apple.com/documentation/healthkit/about-the-healthkit-framework",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "Authorizing access to health data",
+          url: "https://developer.apple.com/documentation/healthkit/authorizing-access-to-health-data",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "HealthKit updates",
+          url: "https://developer.apple.com/documentation/updates/healthkit",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
         }
       ],
-      last_verified_at: "2026-08-30"
+      last_verified_at: "2026-09-30",
+      release_notes: [
+        {
+          title: "iOS and iPadOS 27 release notes",
+          url: "https://developer.apple.com/documentation/ios-ipados-release-notes/ios-ipados-27-release-notes",
+          source_type: "release_notes",
+          verified_at: "2026-09-30"
+        }
+      ]
     },
     {
       id: "healthkit-background-delivery",
@@ -112,7 +140,12 @@ var capabilities_default = {
       related_frameworks: ["HealthKit"],
       related_capabilities: ["HealthKit"],
       platforms: ["iOS", "iPadOS", "watchOS", "visionOS"],
-      minimum_os_version: { iOS: "15.0", iPadOS: "17.0", watchOS: "8.0", visionOS: "1.0" },
+      minimum_os_version: {
+        iOS: "15.0",
+        iPadOS: "17.0",
+        watchOS: "8.0",
+        visionOS: "1.0"
+      },
       sdk_availability: "The entitlement is present in the stable SDK from iPadOS 15, but background delivery requires a HealthKit store, which is available on iPad starting with iPadOS 17.",
       stable_or_beta: "stable",
       on_device_level: "fully_on_device",
@@ -131,16 +164,16 @@ var capabilities_default = {
           title: "Configuring HealthKit access",
           url: "https://developer.apple.com/documentation/xcode/configuring-healthkit-access",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "HealthKit background delivery entitlement",
           url: "https://developer.apple.com/documentation/bundleresources/entitlements/com.apple.developer.healthkit.background-delivery",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         }
       ],
-      last_verified_at: "2026-08-30"
+      last_verified_at: "2026-09-30"
     },
     {
       id: "core-ml",
@@ -148,7 +181,7 @@ var capabilities_default = {
       aliases: ["CoreML", "MLModel"],
       category: "ai_ml",
       entity_type: "framework",
-      summary: "Runs and can personalize supported machine-learning models on device using CPU, GPU, and Neural Engine resources.",
+      summary: "Runs and can personalize supported machine-learning models on device using CPU, GPU, and Neural Engine resources; remains the framework for non-neural model types, while Core AI (iOS 27) targets newer model architectures.",
       supported_use_cases: [
         "Offline inference",
         "On-device model personalization",
@@ -179,19 +212,53 @@ var capabilities_default = {
       ],
       implementation_notes: [
         "Benchmark representative devices",
-        "Provide a fallback for unsupported or resource-constrained models"
+        "Provide a fallback for unsupported or resource-constrained models",
+        "Keep Core ML for existing .mlmodel/.mlpackage models and for non-neural-network model types such as decision trees or tabular feature engineering",
+        "Evaluate Core AI for new deployments that target iOS 27 or later and newer transformer-style architectures; keep Core ML as the fallback for older OS targets"
       ],
-      limitations: ["Model size, memory, latency, thermal state, and power use constrain feasibility"],
+      limitations: [
+        "Model size, memory, latency, thermal state, and power use constrain feasibility",
+        "Core AI is available only on iOS 27 and later, so Core ML remains required for earlier deployment targets",
+        "On iOS 27 the system restricts background Neural Engine access; Apple lists the com.apple.developer.background-tasks.continued-processing.inference entitlement under Core AI, and its applicability to Core ML predictions is not documented",
+        "On iOS 27 and later, the system requires the com.apple.developer.background-tasks.continued-processing.inference entitlement for any Neural Engine access while the app is in the background, according to Apple's Background Inference documentation"
+      ],
       keywords: ["ai", "ml", "offline", "model", "inference", "vision", "coreml"],
       official_documentation: [
         {
           title: "Core ML",
           url: "https://developer.apple.com/documentation/coreml",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "Core AI",
+          url: "https://developer.apple.com/documentation/coreai",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
         }
       ],
-      last_verified_at: "2026-08-30"
+      last_verified_at: "2026-09-30",
+      related_frameworks: ["Core AI", "Vision", "Foundation Models"],
+      recommended_alternatives: [
+        "Core AI (iOS 27 and later) for integrating models that use the latest architectures and inference techniques, such as large language models",
+        "Foundation Models for Apple's system language model"
+      ],
+      release_notes: [
+        {
+          title: "iOS and iPadOS 27 release notes",
+          url: "https://developer.apple.com/documentation/ios-ipados-release-notes/ios-ipados-27-release-notes",
+          source_type: "release_notes",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "Xcode 27 release notes",
+          url: "https://developer.apple.com/documentation/xcode-release-notes/xcode-27-release-notes",
+          source_type: "release_notes",
+          verified_at: "2026-09-30"
+        }
+      ],
+      related_entitlements: ["com.apple.developer.background-tasks.continued-processing.inference"],
+      related_capabilities: ["core-ai", "background-inference-entitlement"]
     },
     {
       id: "foundation-models",
@@ -199,15 +266,22 @@ var capabilities_default = {
       aliases: ["FoundationModels", "SystemLanguageModel", "LanguageModelSession"],
       category: "ai_ml",
       entity_type: "framework",
-      summary: "A Swift framework for guided generation and tool use with the on-device language model that powers Apple Intelligence.",
+      summary: "A Swift framework for guided generation and tool use with the on-device language model that powers Apple Intelligence; iOS 27 adds a LanguageModel provider protocol and a Private Cloud Compute model.",
       supported_use_cases: ["On-device text generation", "Guided structured generation", "Tool calling"],
       unsupported_use_cases: [
         "Assuming availability on every iPhone",
-        "Using without a fallback when Apple Intelligence is unavailable"
+        "Using without a fallback when Apple Intelligence is unavailable",
+        "Using iOS 27 additions such as LanguageModel providers or PrivateCloudComputeLanguageModel on iOS 26 targets without availability checks"
       ],
-      platforms: ["iOS", "iPadOS", "macOS", "visionOS"],
-      minimum_os_version: { iOS: "26.0", iPadOS: "26.0", macOS: "26.0", visionOS: "26.0" },
-      sdk_availability: "Stable APIs in the iOS 26 SDK; iOS 27 additions are tracked separately as beta.",
+      platforms: ["iOS", "iPadOS", "macOS", "visionOS", "watchOS"],
+      minimum_os_version: {
+        iOS: "26.0",
+        iPadOS: "26.0",
+        macOS: "26.0",
+        visionOS: "26.0",
+        watchOS: "27.0"
+      },
+      sdk_availability: "Stable APIs in the iOS 26 SDK (SystemLanguageModel and core session APIs); watchOS support and the iOS 27 additions (LanguageModel protocol, PrivateCloudComputeLanguageModel, ToolCallingMode, Vision tools) are stable in the iOS 27.0 SDK and are detailed in the foundation-models-ios27-beta record.",
       stable_or_beta: "stable",
       on_device_level: "fully_on_device",
       network_requirement: "No network is required after the system model is available; initial system model readiness is controlled by the OS.",
@@ -217,11 +291,13 @@ var capabilities_default = {
       language_restrictions: ["Availability depends on Apple Intelligence language support"],
       implementation_notes: [
         "Check SystemLanguageModel.default.availability before use",
-        "Provide deterministic fallback behavior"
+        "Provide deterministic fallback behavior",
+        "iOS 27 updates the system model, so retest prompts after OS updates and on the iOS 27 model"
       ],
       limitations: [
         "The system model and behavior can change with OS updates",
-        "Context, latency, and safety guardrails constrain output"
+        "Context, latency, and safety guardrails constrain output",
+        "watchOS support begins at watchOS 27.0"
       ],
       keywords: ["ai", "llm", "offline", "apple intelligence", "generation", "foundation models"],
       official_documentation: [
@@ -229,65 +305,142 @@ var capabilities_default = {
           title: "Foundation Models",
           url: "https://developer.apple.com/documentation/foundationmodels",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "Generating content and performing tasks with Foundation Models",
           url: "https://developer.apple.com/documentation/foundationmodels/generating-content-and-performing-tasks-with-foundation-models",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "Foundation Models updates",
+          url: "https://developer.apple.com/documentation/updates/foundationmodels",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
         }
       ],
-      last_verified_at: "2026-08-30"
+      last_verified_at: "2026-09-30",
+      related_frameworks: ["Core AI", "Vision", "Core Spotlight"],
+      related_capabilities: ["Foundation Models iOS 27 additions"],
+      release_notes: [
+        {
+          title: "iOS and iPadOS 27 release notes",
+          url: "https://developer.apple.com/documentation/ios-ipados-release-notes/ios-ipados-27-release-notes",
+          source_type: "release_notes",
+          verified_at: "2026-09-30"
+        }
+      ]
     },
     {
       id: "foundation-models-ios27-beta",
       name: "Foundation Models iOS 27 additions",
-      aliases: ["Dynamic Profiles", "multimodal Foundation Models", "LanguageModel protocol"],
+      aliases: [
+        "Dynamic Profiles",
+        "multimodal Foundation Models",
+        "LanguageModel protocol",
+        "PrivateCloudComputeLanguageModel",
+        "Private Cloud Compute language model"
+      ],
       category: "ai_ml",
       entity_type: "api",
-      summary: "Beta iOS 27 additions including multimodal prompts, dynamic profiles, and provider abstraction.",
-      supported_use_cases: ["Evaluate iOS 27 multimodal and provider-based designs in beta builds"],
-      unsupported_use_cases: ["Shipping as a stable production dependency before the SDK exits beta"],
-      platforms: ["iOS", "iPadOS", "macOS", "visionOS"],
-      minimum_os_version: {
-        iOS: "27.0 beta",
-        iPadOS: "27.0 beta",
-        macOS: "27.0 beta",
-        visionOS: "27.0 beta"
-      },
-      sdk_availability: "Xcode 27 beta SDK",
-      stable_or_beta: "beta",
-      on_device_level: "hybrid",
-      network_requirement: "Depends on the selected LanguageModel provider; Apple on-device models can run locally while cloud providers require network access.",
-      implementation_notes: [
-        "Keep beta-only code behind availability checks and isolate it from the stable architecture"
+      summary: "Stable iOS 27.0 additions to Foundation Models: the LanguageModel provider protocol, PrivateCloudComputeLanguageModel, multimodal prompts through Vision tools, tool-calling control, and dynamic profiles; the id keeps its beta suffix for compatibility.",
+      supported_use_cases: [
+        "Route a LanguageModelSession to the on-device SystemLanguageModel or to PrivateCloudComputeLanguageModel through the LanguageModel protocol",
+        "Add image analysis with Vision OCRTool and BarcodeReaderTool",
+        "Give the model access to app data through Core Spotlight SpotlightSearchTool",
+        "Use a third-party or on-device LanguageModel provider behind the same session API"
       ],
-      limitations: ["Beta API and behavior may change", "Provider-specific privacy and cost terms apply"],
-      keywords: ["ios 27", "beta", "multimodal", "dynamic profiles", "language model provider"],
+      unsupported_use_cases: [
+        "Assuming iOS 27 APIs exist on iOS 26 or earlier targets without availability checks",
+        "Using PrivateCloudComputeLanguageModel without the managed com.apple.developer.private-cloud-compute entitlement or a network connection",
+        "Assuming PCC is available on every device, region, or unlimited quota",
+        "Treating third-party LanguageModel providers as on-device or private"
+      ],
+      platforms: ["iOS", "iPadOS", "macOS", "visionOS", "watchOS"],
+      minimum_os_version: {
+        iOS: "27.0",
+        iPadOS: "27.0",
+        macOS: "27.0",
+        visionOS: "27.0",
+        watchOS: "27.0"
+      },
+      sdk_availability: "Stable in the iOS 27.0 SDK (Xcode 27); iOS 27.0 is released, not beta. Vision OCRTool and Core Spotlight SpotlightSearchTool are not listed for watchOS.",
+      stable_or_beta: "stable",
+      on_device_level: "hybrid",
+      network_requirement: "Depends on the selected LanguageModel provider; SystemLanguageModel runs locally, while PrivateCloudComputeLanguageModel and cloud providers require network access.",
+      implementation_notes: [
+        "Gate iOS 27 APIs behind availability checks and fall back to SystemLanguageModel on earlier versions",
+        "Check PrivateCloudComputeLanguageModel availability and handle LanguageModelError quota cases; retry with the on-device model when the network is unavailable",
+        "Configure SpotlightSearchTool with a focused guide for the on-device model; the default configuration exceeds its context window"
+      ],
+      limitations: [
+        "PCC has a daily request quota per person and requires a network connection",
+        "Provider-specific privacy and cost terms apply to non-Apple LanguageModel providers",
+        "iOS 27.2 is in beta; nothing here depends on it"
+      ],
+      keywords: [
+        "ios 27",
+        "multimodal",
+        "dynamic profiles",
+        "language model provider",
+        "private cloud compute",
+        "tool calling"
+      ],
       official_documentation: [
         {
           title: "Foundation Models updates",
           url: "https://developer.apple.com/documentation/updates/foundationmodels",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "LanguageModel",
+          url: "https://developer.apple.com/documentation/foundationmodels/languagemodel",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "PrivateCloudComputeLanguageModel",
+          url: "https://developer.apple.com/documentation/foundationmodels/privatecloudcomputelanguagemodel",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "Adding server-side intelligence with Private Cloud Compute",
+          url: "https://developer.apple.com/documentation/foundationmodels/adding-server-side-intelligence-with-private-cloud-compute",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "Private Cloud Compute entitlement",
+          url: "https://developer.apple.com/documentation/bundleresources/entitlements/com.apple.developer.private-cloud-compute",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
         },
         {
           title: "WWDC26 iOS guide",
           url: "https://developer.apple.com/wwdc26/guides/ios/",
           source_type: "wwdc",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         }
       ],
       release_notes: [
         {
-          title: "iOS and iPadOS 27 beta release notes",
+          title: "iOS and iPadOS 27 release notes",
           url: "https://developer.apple.com/documentation/ios-ipados-release-notes/ios-ipados-27-release-notes",
           source_type: "release_notes",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         }
       ],
-      last_verified_at: "2026-08-30"
+      last_verified_at: "2026-09-30",
+      related_frameworks: ["Foundation Models", "Vision", "Core Spotlight", "Core AI"],
+      supported_devices: ["Devices eligible for Apple Intelligence (required for PrivateCloudComputeLanguageModel)"],
+      region_restrictions: ["PCC availability depends on Apple Intelligence regional support"],
+      entitlements: [
+        "com.apple.developer.private-cloud-compute (managed; only for PrivateCloudComputeLanguageModel)"
+      ],
+      managed_entitlements: ["Apple eligibility review and access request for the Private Cloud Compute entitlement"]
     },
     {
       id: "core-location",
@@ -327,7 +480,8 @@ var capabilities_default = {
       security_considerations: ["Location is sensitive personal data", "Minimize retention and precision"],
       implementation_notes: [
         "Prefer When In Use authorization",
-        "Set allowsBackgroundLocationUpdates only while the user-enabled feature is active"
+        "Set allowsBackgroundLocationUpdates only while the user-enabled feature is active",
+        "Prefer CLLocationUpdate.liveUpdates and CLMonitor with CLServiceSession over legacy delegate flows for new code"
       ],
       limitations: [
         "The OS can suspend or terminate the app",
@@ -340,16 +494,16 @@ var capabilities_default = {
           title: "Core Location",
           url: "https://developer.apple.com/documentation/corelocation",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "Handling location updates in the background",
           url: "https://developer.apple.com/documentation/corelocation/handling-location-updates-in-the-background",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         }
       ],
-      last_verified_at: "2026-08-30"
+      last_verified_at: "2026-09-30"
     },
     {
       id: "user-notifications",
@@ -384,7 +538,8 @@ var capabilities_default = {
       ],
       implementation_notes: [
         "Handle denied authorization and in-app alternatives",
-        "APNs is not a general-purpose data transport"
+        "APNs is not a general-purpose data transport",
+        "iOS 27 no longer turns on critical alerts automatically when a user grants notification permission; do not assume critical-alert delivery from a standard authorization grant"
       ],
       limitations: [
         "The system controls presentation and delivery",
@@ -396,10 +551,18 @@ var capabilities_default = {
           title: "UserNotifications",
           url: "https://developer.apple.com/documentation/usernotifications",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         }
       ],
-      last_verified_at: "2026-08-30"
+      last_verified_at: "2026-09-30",
+      release_notes: [
+        {
+          title: "iOS and iPadOS 27 release notes",
+          url: "https://developer.apple.com/documentation/ios-ipados-release-notes/ios-ipados-27-release-notes",
+          source_type: "release_notes",
+          verified_at: "2026-09-30"
+        }
+      ]
     },
     {
       id: "background-tasks",
@@ -408,34 +571,91 @@ var capabilities_default = {
       category: "background_execution",
       entity_type: "framework",
       summary: "Asks the system to schedule bounded background refresh or processing work at an opportune time.",
-      supported_use_cases: ["Deferred refresh", "Maintenance and processing work"],
+      supported_use_cases: [
+        "Deferred refresh",
+        "Maintenance and processing work",
+        "User-initiated long-running jobs that continue after backgrounding (BGContinuedProcessingTask, iOS 26+)"
+      ],
       unsupported_use_cases: [
         "Continuous execution",
         "Exact schedules",
-        "Replacing a server for always-on processing"
+        "Replacing a server for always-on processing",
+        "Background Neural Engine inference without the Background Inference entitlement on iOS 27"
       ],
       platforms: ["iOS", "iPadOS", "tvOS", "visionOS"],
-      minimum_os_version: { iOS: "13.0", iPadOS: "13.0", tvOS: "13.0", visionOS: "1.0" },
-      sdk_availability: "Available in the current stable Apple SDKs for the listed platforms.",
+      minimum_os_version: {
+        iOS: "13.0",
+        iPadOS: "13.0",
+        tvOS: "13.0",
+        visionOS: "1.0"
+      },
+      sdk_availability: "BGTaskScheduler refresh and processing tasks are available from iOS 13.0. BGContinuedProcessingTask and BGContinuedProcessingTaskRequest are available from iOS 26.0 and iPadOS 26.0 (not tvOS or visionOS). The Background Inference entitlement is documented for the 27.0 SDKs.",
       stable_or_beta: "stable",
       on_device_level: "fully_on_device",
       info_plist_keys: ["BGTaskSchedulerPermittedIdentifiers"],
       background_modes: ["UIBackgroundModes: fetch", "UIBackgroundModes: processing"],
       implementation_notes: [
         "Register task identifiers before launch completion",
-        "Set expiration handlers and make work resumable"
+        "Set expiration handlers and make work resumable",
+        "BGContinuedProcessingTask must start in the foreground in response to a person's action and shows progress in a system Live Activity the person can cancel; report progress regularly and handle the expiration handler",
+        "Prefix the continued processing task identifier with the app bundle ID and make the task-name portion unique per job",
+        "On iOS 27 the system restricts background Neural Engine access like background GPU use; it requires the inference entitlement for Core AI, Core ML, or MPS Graph inference, whether or not a continued task is running"
       ],
-      limitations: ["The system decides whether and when to launch tasks", "Execution time is bounded"],
-      keywords: ["background", "refresh", "processing", "schedule", "deferred"],
+      limitations: [
+        "The system decides whether and when to launch tasks",
+        "Execution time is bounded",
+        "Background Neural Engine access on iOS 27 requires the inference entitlement even outside a continued processing task",
+        "Continued processing tasks are cancelable by the person and are not a substitute for always-on server processing"
+      ],
+      keywords: [
+        "background",
+        "refresh",
+        "processing",
+        "schedule",
+        "deferred",
+        "continued processing",
+        "neural engine"
+      ],
       official_documentation: [
         {
           title: "BackgroundTasks",
           url: "https://developer.apple.com/documentation/backgroundtasks",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "Performing long-running tasks on iOS and iPadOS",
+          url: "https://developer.apple.com/documentation/backgroundtasks/performing-long-running-tasks-on-ios-and-ipados",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "BGContinuedProcessingTask",
+          url: "https://developer.apple.com/documentation/backgroundtasks/bgcontinuedprocessingtask",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "Background Inference entitlement",
+          url: "https://developer.apple.com/documentation/bundleresources/entitlements/com.apple.developer.background-tasks.continued-processing.inference",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
         }
       ],
-      last_verified_at: "2026-08-30"
+      last_verified_at: "2026-09-30",
+      release_notes: [
+        {
+          title: "iOS and iPadOS 27 release notes",
+          url: "https://developer.apple.com/documentation/ios-ipados-release-notes/ios-ipados-27-release-notes",
+          source_type: "release_notes",
+          verified_at: "2026-09-30"
+        }
+      ],
+      entitlements: [
+        "com.apple.developer.background-tasks.continued-processing.gpu (value true) only for background GPU use by a continued processing task",
+        "com.apple.developer.background-tasks.continued-processing.inference (iOS 27) for Neural Engine access while the app is in the background"
+      ],
+      xcode_capabilities: ["Background GPU Access only for continued processing tasks that require the GPU"]
     },
     {
       id: "widgetkit",
@@ -466,7 +686,8 @@ var capabilities_default = {
       ],
       limitations: [
         "Timeline reload frequency is system controlled",
-        "The extension has separate process and resource constraints"
+        "The extension has separate process and resource constraints",
+        "Before the iOS 27 fix, a widget extension could fail to render its timeline when its WidgetConfigurationIntent declared a @UnionValue property; test such intents on iOS 27"
       ],
       keywords: ["widget", "extension", "lock screen", "control", "timeline"],
       official_documentation: [
@@ -474,16 +695,24 @@ var capabilities_default = {
           title: "WidgetKit",
           url: "https://developer.apple.com/documentation/widgetkit",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "Adding interactivity to widgets and Live Activities",
           url: "https://developer.apple.com/documentation/widgetkit/adding-interactivity-to-widgets-and-live-activities",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         }
       ],
-      last_verified_at: "2026-08-30"
+      last_verified_at: "2026-09-30",
+      release_notes: [
+        {
+          title: "iOS and iPadOS 27 release notes",
+          url: "https://developer.apple.com/documentation/ios-ipados-release-notes/ios-ipados-27-release-notes",
+          source_type: "release_notes",
+          verified_at: "2026-09-30"
+        }
+      ]
     },
     {
       id: "activitykit",
@@ -501,7 +730,10 @@ var capabilities_default = {
       related_frameworks: ["WidgetKit", "SwiftUI", "AppIntents"],
       related_extensions: ["Widget Extension"],
       platforms: ["iOS", "iPadOS"],
-      minimum_os_version: { iOS: "16.1", iPadOS: "16.1" },
+      minimum_os_version: {
+        iOS: "16.1",
+        iPadOS: "16.1"
+      },
       sdk_availability: "Available in the current stable iOS and iPadOS SDKs.",
       stable_or_beta: "stable",
       on_device_level: "hybrid",
@@ -521,10 +753,11 @@ var capabilities_default = {
           title: "ActivityKit",
           url: "https://developer.apple.com/documentation/activitykit",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         }
       ],
-      last_verified_at: "2026-08-30"
+      last_verified_at: "2026-09-30",
+      release_notes: []
     },
     {
       id: "app-intents",
@@ -547,30 +780,46 @@ var capabilities_default = {
         tvOS: "16.0",
         visionOS: "1.0"
       },
-      sdk_availability: "Available in the current stable Apple SDKs for the listed platforms.",
+      sdk_availability: "Available in the current stable Apple SDKs for the listed platforms. iOS 27 SDK changes: AppEntity size limit, photos.asset schema additions, calendar.deleteEvent rename, and AttributedString names in notes schemas.",
       stable_or_beta: "stable",
       on_device_level: "primarily_on_device",
       implementation_notes: [
         "Keep intents focused, parameterized, and safe to retry",
-        "Add an intent to each target that must discover or execute it"
+        "Add an intent to each target that must discover or execute it",
+        "AppEntity instances have a cumulative size limit of 10MB including all child properties; an app can crash and the exception is logged if an entity exceeds it, so keep entities small and reference large data by identifier",
+        "In the 27 SDKs the calendar.deleteEvents schema is renamed calendar.deleteEvent; update schema conformances",
+        "Existing @AppEntity(schema: .photos.asset) conformances might not compile with the 27 SDKs because the schema gained properties; adopt the new properties behind an availability check",
+        "notes.createNote and notes.updateNote schemas accept an AttributedString name parameter in iOS 27",
+        "Custom non-SF-Symbol entity images in Siri, Set-type schema parameter defaults, RelevantEntities workout suggestions, reminders.updateReminder dispatch, and the notes.appendText schema were fixed in the iOS 27 release notes"
       ],
-      limitations: ["Execution context varies by intent protocol and system surface"],
+      limitations: [
+        "Execution context varies by intent protocol and system surface",
+        "Schema-conforming entities and intents are tied to SDK schema definitions that can change between SDK releases"
+      ],
       keywords: ["siri", "shortcut", "intent", "widget interaction", "spotlight", "app actions"],
       official_documentation: [
         {
           title: "App Intents",
           url: "https://developer.apple.com/documentation/appintents",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "Widgets, Live Activities, and Controls",
           url: "https://developer.apple.com/documentation/appintents/widgets-live-activities-and-controls",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         }
       ],
-      last_verified_at: "2026-08-30"
+      last_verified_at: "2026-09-30",
+      release_notes: [
+        {
+          title: "iOS and iPadOS 27 release notes",
+          url: "https://developer.apple.com/documentation/ios-ipados-release-notes/ios-ipados-27-release-notes",
+          source_type: "release_notes",
+          verified_at: "2026-09-30"
+        }
+      ]
     },
     {
       id: "app-groups",
@@ -611,16 +860,17 @@ var capabilities_default = {
           title: "Configuring App Groups",
           url: "https://developer.apple.com/documentation/xcode/configuring-app-groups",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "App Groups Entitlement",
           url: "https://developer.apple.com/documentation/bundleresources/entitlements/com.apple.security.application-groups",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         }
       ],
-      last_verified_at: "2026-08-30"
+      last_verified_at: "2026-09-30",
+      release_notes: []
     },
     {
       id: "family-controls-managed-entitlement",
@@ -642,7 +892,10 @@ var capabilities_default = {
         "Shield Configuration"
       ],
       platforms: ["iOS", "iPadOS"],
-      minimum_os_version: { iOS: "15.0", iPadOS: "15.0" },
+      minimum_os_version: {
+        iOS: "15.0",
+        iPadOS: "15.0"
+      },
       sdk_availability: "Available in the current stable iOS and iPadOS SDKs; distribution requires Apple approval.",
       stable_or_beta: "stable",
       on_device_level: "primarily_on_device",
@@ -674,22 +927,23 @@ var capabilities_default = {
           title: "Requesting the Family Controls entitlement",
           url: "https://developer.apple.com/documentation/familycontrols/requesting-the-family-controls-entitlement",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "Configuring Family Controls",
           url: "https://developer.apple.com/documentation/xcode/configuring-family-controls",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "Family Controls entitlement",
           url: "https://developer.apple.com/documentation/bundleresources/entitlements/com.apple.developer.family-controls",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         }
       ],
-      last_verified_at: "2026-08-30"
+      last_verified_at: "2026-09-30",
+      release_notes: []
     },
     {
       id: "swiftdata",
@@ -701,7 +955,8 @@ var capabilities_default = {
       supported_use_cases: [
         "Local structured persistence",
         "SwiftUI-integrated data models",
-        "Eligible CloudKit synchronization"
+        "Eligible CloudKit synchronization",
+        "Sectioned queries, Codable attributes, and live result and history observation on iOS 27 and later"
       ],
       unsupported_use_cases: [
         "A cross-platform server database",
@@ -722,7 +977,9 @@ var capabilities_default = {
       cloud_dependency: "Optional CloudKit integration",
       implementation_notes: [
         "Use an actor-aware data access boundary for nontrivial apps",
-        "Plan migrations and test real schema evolution"
+        "Plan migrations and test real schema evolution",
+        "Gate iOS 27 additions such as ResultsObserver, HistoryObserver, sectionBy query macros, and the codable Attribute option behind availability checks",
+        "Avoid saving a ModelContext on a background actor while scheduling async tasks for a ModelActor on iOS 26 and earlier; iOS 27 fixes a related @Query deadlock"
       ],
       recommended_alternatives: [
         "Core Data for older OS targets or mature migration requirements",
@@ -734,10 +991,37 @@ var capabilities_default = {
           title: "SwiftData",
           url: "https://developer.apple.com/documentation/swiftdata",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "SwiftData updates",
+          url: "https://developer.apple.com/documentation/updates/swiftdata",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "ResultsObserver",
+          url: "https://developer.apple.com/documentation/swiftdata/resultsobserver",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "HistoryObserver",
+          url: "https://developer.apple.com/documentation/swiftdata/historyobserver",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
         }
       ],
-      last_verified_at: "2026-08-30"
+      last_verified_at: "2026-09-30",
+      limitations: ["ResultsObserver and HistoryObserver require iOS 27.0 or later"],
+      release_notes: [
+        {
+          title: "iOS and iPadOS 27 release notes",
+          url: "https://developer.apple.com/documentation/ios-ipados-release-notes/ios-ipados-27-release-notes",
+          source_type: "release_notes",
+          verified_at: "2026-09-30"
+        }
+      ]
     },
     {
       id: "privacy-manifest",
@@ -767,10 +1051,11 @@ var capabilities_default = {
           title: "Privacy manifest files",
           url: "https://developer.apple.com/documentation/bundleresources/privacy-manifest-files",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         }
       ],
-      last_verified_at: "2026-08-30"
+      last_verified_at: "2026-09-30",
+      release_notes: []
     },
     {
       id: "required-reason-apis",
@@ -795,10 +1080,11 @@ var capabilities_default = {
           title: "Describing use of required reason API",
           url: "https://developer.apple.com/documentation/bundleresources/describing-use-of-required-reason-api",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         }
       ],
-      last_verified_at: "2026-08-30"
+      last_verified_at: "2026-09-30",
+      release_notes: []
     },
     {
       id: "storekit-2",
@@ -826,7 +1112,7 @@ var capabilities_default = {
         tvOS: "15.0",
         visionOS: "1.0"
       },
-      sdk_availability: "StoreKit 2 Swift APIs are available in the current stable Apple SDKs for the listed platforms.",
+      sdk_availability: "StoreKit 2 Swift APIs are stable in the current Apple SDKs for the listed platforms. iOS 27.0 additions (offer-code redemption with options, subscription Bundles and Suites, BundledSubscription, AppTransaction.all and storeType, Advanced Commerce partner info) are stable in the iOS 27.0 SDK and require 27.0 at runtime; iOS 27.0 is released, not beta.",
       stable_or_beta: "stable",
       on_device_level: "hybrid",
       network_requirement: "App Store product and transaction operations require Apple services; cached entitlement state can support limited offline behavior.",
@@ -834,23 +1120,85 @@ var capabilities_default = {
         "Verify transactions",
         "Use App Store Server API and notifications when server-side fulfillment or reconciliation is required"
       ],
-      implementation_notes: ["Test with StoreKit Testing and sandbox", "Finish handled transactions"],
+      implementation_notes: [
+        "Test with StoreKit Testing and sandbox",
+        "Finish handled transactions",
+        "iOS 27: presentOfferCodeRedeemSheet(from:options:) (UIKit and AppKit) returns a VerificationResult<Transaction> when redemption completes and throws a StoreKitError on failure; SwiftUI offerCodeRedemption(options:isPresented:onCompletion:) delivers the same result; RedeemOption customizes redemption (27.0)",
+        "iOS 27: Product.ProductType adds subscriptionBundle and subscriptionSuite; Product.SubscriptionInfo.BundledSubscription and bundledSubscriptions expose merchandising data for bundle members; Transaction and RenewalInfo carry new Bundle and Suite fields (27.0)",
+        "iOS 27 volume purchases: Transaction.OwnershipType.assigned and Transaction.RevocationType.assignmentRevocation (release notes call it assignmentRevoked) describe organization-assigned transactions, and Transaction queries also return transactions assigned to the Managed Apple Account",
+        "iOS 27: Transaction.AdvancedCommerceInfo.Partner (id and name; release notes name them partnerId and partnerName) exposes Advanced Commerce partner data (27.0)",
+        "iOS 27: AppTransaction.all and AppTransaction.StoreType (enterprise, consumer, education) are available at 27.0",
+        "Xcode 27 StoreKit Testing adds offer-code configuration, Bundle and Suite configuration, and SKTestSession fixes (unified receipt after forced expiration, disableDialogs, upgrade reporting in Transaction.updates, clearTransactions intro-offer reset); storefront and locale propagation through Storefront.updates and dialogsDisabled failed-purchase dialogs are fixed in iOS 27.2 beta 2"
+      ],
       keywords: ["purchase", "subscription", "monetization", "storekit", "iap"],
       official_documentation: [
         {
           title: "StoreKit",
           url: "https://developer.apple.com/documentation/storekit",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "Product",
           url: "https://developer.apple.com/documentation/storekit/product",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "Supporting subscription offer codes in your app",
+          url: "https://developer.apple.com/documentation/storekit/supporting-subscription-offer-codes-in-your-app",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "RedeemOption",
+          url: "https://developer.apple.com/documentation/storekit/redeemoption",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "Product.ProductType",
+          url: "https://developer.apple.com/documentation/storekit/product/producttype",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "Transaction.AdvancedCommerceInfo.Partner",
+          url: "https://developer.apple.com/documentation/storekit/transaction/advancedcommerceinfo-swift.struct/partner",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
         }
       ],
-      last_verified_at: "2026-08-30"
+      last_verified_at: "2026-09-30",
+      release_notes: [
+        {
+          title: "iOS and iPadOS 27 release notes",
+          url: "https://developer.apple.com/documentation/ios-ipados-release-notes/ios-ipados-27-release-notes",
+          source_type: "release_notes",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "Xcode 27 release notes",
+          url: "https://developer.apple.com/documentation/xcode-release-notes/xcode-27-release-notes",
+          source_type: "release_notes",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "iOS and iPadOS 27.2 beta 2 release notes",
+          url: "https://developer.apple.com/documentation/ios-ipados-release-notes/ios-ipados-27_2-release-notes",
+          source_type: "release_notes",
+          verified_at: "2026-09-30"
+        }
+      ],
+      limitations: [
+        "presentOfferCodeRedeemSheet(in:), presentOfferCodeRedeemSheet(from:) and offerCodeRedemption(isPresented:onCompletion:) are deprecated in 27.0; the options-based replacements require 27.0 and older deployment targets need availability checks",
+        "Subscription Bundles and Suites, BundledSubscription, and the 27.0 redemption results need iOS, iPadOS, Mac Catalyst, macOS, tvOS, visionOS, and watchOS 27.0 or later per the platform lists on each symbol; offer-code redemption sheets are not listed for tvOS or watchOS",
+        "iOS 27.2 beta 2 known issue: an in-app purchase of a subscription that belongs to a subscription bundle incorrectly allows the user to unbundle instead of throwing an error",
+        "Volume-purchase symbols are documented with earlier availability than the iOS 27 release notes imply (RevocationType is listed at 26.4 and OwnershipType.assigned inherits the 15.0 type baseline); exact minimum OS for these values is unconfirmed"
+      ],
+      recommended_alternatives: [
+        "presentOfferCodeRedeemSheet(from:options:) or offerCodeRedemption(options:isPresented:onCompletion:) instead of the deprecated 27.0 redemption APIs"
+      ]
     },
     {
       id: "swift",
@@ -880,7 +1228,7 @@ var capabilities_default = {
         visionOS: "1.0",
         watchOS: "2.0"
       },
-      sdk_availability: "Stable Swift language documentation covers the listed Apple platform baselines. Local verification used Xcode 26.6, SDK 26.5, and Apple Swift 6.3.3; Xcode 27 was not locally installed.",
+      sdk_availability: "Stable Swift language documentation covers the listed Apple platform baselines. Xcode 27 includes Swift 6.4 and the iOS 27, iPadOS 27, tvOS 27, watchOS 27, macOS 27, and visionOS 27 SDKs, and requires macOS Tahoe 26.6 or later (Xcode 27 release notes, reviewed 2026-09-30). Earlier local verification used Xcode 26.6, SDK 26.5, and Apple Swift 6.3.3; Xcode 27 was not locally installed.",
       stable_or_beta: "stable",
       on_device_level: "fully_on_device",
       network_requirement: "The language and runtime require no network; APIs implemented in Swift may require connectivity.",
@@ -903,25 +1251,50 @@ var capabilities_default = {
       ],
       implementation_notes: [
         "Select the Swift language mode independently from the deployment target",
-        "Use availability checks for SDK APIs whose minimum operating-system version exceeds the app target"
+        "Use availability checks for SDK APIs whose minimum operating-system version exceeds the app target",
+        "The System module's Swift stat APIs (Stat type, FilePath.stat(), FileDescriptor.stat()) require OS 27.0 or later and exist only on Unix-like platforms; custom unqualified stat() calls in FilePath or FileDescriptor extensions can now conflict and need Darwin qualification"
       ],
-      limitations: ["Compiler and language version do not override framework or operating-system availability"],
-      keywords: ["swift", "language", "compiler", "toolchain", "package"],
+      limitations: [
+        "Compiler and language version do not override framework or operating-system availability",
+        "Swift 6.4 Known Issue (SE-0508): a computed property with both an init accessor and an array or dictionary literal initial value no longer compiles if the getter is declared before the init accessor; declare the init accessor first",
+        "Every Clang module reachable from one Swift dependency-scan action must have a unique module name in Xcode 27"
+      ],
+      keywords: ["swift", "language", "compiler", "toolchain", "package", "swift 6.4", "xcode 27"],
       official_documentation: [
         {
           title: "Swift",
           url: "https://developer.apple.com/documentation/swift",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "Swift overview",
           url: "https://developer.apple.com/swift/",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "Stat",
+          url: "https://developer.apple.com/documentation/system/stat",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
         }
       ],
-      last_verified_at: "2026-08-30"
+      last_verified_at: "2026-09-30",
+      release_notes: [
+        {
+          title: "Xcode 27 release notes",
+          url: "https://developer.apple.com/documentation/xcode-release-notes/xcode-27-release-notes",
+          source_type: "release_notes",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "iOS and iPadOS 27 release notes",
+          url: "https://developer.apple.com/documentation/ios-ipados-release-notes/ios-ipados-27-release-notes",
+          source_type: "release_notes",
+          verified_at: "2026-09-30"
+        }
+      ]
     },
     {
       id: "swift-concurrency",
@@ -952,7 +1325,7 @@ var capabilities_default = {
         visionOS: "1.0",
         watchOS: "6.0"
       },
-      sdk_availability: "The stable concurrency runtime is back-deployed to the listed baselines. Local verification used Apple Swift 6.3.3; Xcode 27 was not locally installed.",
+      sdk_availability: "The stable concurrency runtime is back-deployed to the listed baselines. Xcode 27 includes Swift 6.4 (Xcode 27 release notes, reviewed 2026-09-30). Earlier local verification used Apple Swift 6.3.3; Xcode 27 was not locally installed.",
       stable_or_beta: "stable",
       on_device_level: "fully_on_device",
       network_requirement: "Concurrency primitives require no network; the work they coordinate may use network APIs.",
@@ -973,35 +1346,64 @@ var capabilities_default = {
       implementation_notes: [
         "Keep UI work on the main actor and move expensive non-UI work to an appropriate isolation context",
         "Check cancellation cooperatively and release resources on cancellation",
-        "Retain unstructured task handles when cancellation or result observation is required"
+        "Retain unstructured task handles when cancellation or result observation is required",
+        "With approachable-concurrency defaults that infer MainActor isolation, an unannotated nonisolated async method runs on the main actor; mark work that must leave the main actor @concurrent (the iOS 27 SDK declares SwiftUI DocumentReader.read and DocumentWriter.write requirements @concurrent for this reason)",
+        "Xcode 27 Instruments adds a Swift Executors instrument, Task Collection tracks, and Task and Actor tracks that survive traces starting mid-lifetime; on systems older than iOS 27 executor names show as Unknown executor",
+        "LLDB in Xcode 27 adds the language swift task tree command"
       ],
       limitations: [
         "Cancellation is cooperative",
         "Concurrency does not imply parallel execution or a new thread",
-        "Task scheduling remains controlled by the runtime"
+        "Task scheduling remains controlled by the runtime",
+        "Main-actor inference from approachable-concurrency defaults is a project or module setting, not a guarantee of off-main execution; Sendable constraints also changed in SDK types (URLDocumentConfiguration is a MainActor-isolated Observable class and is no longer Sendable in the 27.0 SDK)"
       ],
-      keywords: ["swift concurrency", "async", "await", "actor", "task", "sendable", "parallel"],
+      keywords: [
+        "swift concurrency",
+        "async",
+        "await",
+        "actor",
+        "task",
+        "sendable",
+        "parallel",
+        "concurrent",
+        "approachable concurrency",
+        "mainactor"
+      ],
       official_documentation: [
         {
           title: "Swift Concurrency",
           url: "https://developer.apple.com/documentation/swift/concurrency",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "Adopting strict concurrency in Swift 6 apps",
           url: "https://developer.apple.com/documentation/swift/adoptingswift6",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "Xcode 13.2 Release Notes",
           url: "https://developer.apple.com/documentation/xcode-release-notes/xcode-13_2-release-notes",
           source_type: "release_notes",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         }
       ],
-      last_verified_at: "2026-08-30"
+      last_verified_at: "2026-09-30",
+      release_notes: [
+        {
+          title: "Xcode 27 release notes",
+          url: "https://developer.apple.com/documentation/xcode-release-notes/xcode-27-release-notes",
+          source_type: "release_notes",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "iOS and iPadOS 27 release notes",
+          url: "https://developer.apple.com/documentation/ios-ipados-release-notes/ios-ipados-27-release-notes",
+          source_type: "release_notes",
+          verified_at: "2026-09-30"
+        }
+      ]
     },
     {
       id: "swiftui",
@@ -1034,7 +1436,7 @@ var capabilities_default = {
         visionOS: "1.0",
         watchOS: "6.0"
       },
-      sdk_availability: "Stable framework modules are present in the current Apple SDKs for the listed platforms. Local interfaces were verified with Xcode 26.6 and SDK 26.5; Xcode 27 was not locally installed.",
+      sdk_availability: "Stable framework modules are present in the current Apple SDKs for the listed platforms. Xcode 27 and the iOS 27 SDK add the Document, ReadableDocument, and WritableDocument protocols (27.0), asyncImageURLSession (27.0), and TabsPickerStyle (27.0). The FileDocument protocol is deprecated in the 27 SDKs (docs metadata lists 27.2). Unlike other records, 27 changes below come from Apple release notes and developer.apple.com documentation, not local SDK inspection.",
       stable_or_beta: "stable",
       on_device_level: "fully_on_device",
       network_requirement: "UI rendering requires no network; model and service layers may require connectivity.",
@@ -1058,34 +1460,70 @@ var capabilities_default = {
       implementation_notes: [
         "Keep view body computation fast and model state ownership explicit",
         "Test Dynamic Type, VoiceOver, localization, size classes, and platform variants",
-        "Use real device and runtime tests in addition to Xcode previews"
+        "Use real device and runtime tests in addition to Xcode previews",
+        "@State is a Swift macro in Xcode 27 that evaluates its initial-value expression once and back-deploys to iOS 17 aligned OSes; assigning an initial value in both the declaration and an initializer, relying on a synthesized private init when all stored members are private, and composing @State with other wrappers or macros no longer compile or work",
+        "For documents prefer Document (read and write) or ReadableDocument (read-only) and WritableDocument with new DocumentGroup initializers (27.0 SDKs); FileDocument is deprecated and ReferenceFileDocument is no longer recommended for new apps",
+        "AsyncImage caches with HTTP caching protocols in the 27 SDKs; use the URLRequest cachePolicy initializers or asyncImageURLSession(_:) to control caching",
+        "In apps built with the iOS 27 SDK a TabView enforces that its selection is a visible tab and might crash when selection is set to a hidden or unavailable tab",
+        "SwiftUI hides menu item symbol images by default in iPadOS 27 and macOS 27 menu bars and macOS 27 context menus; use labelStyle(.titleAndIcon) to keep an image",
+        "Selectable Text with textSelection(.enabled) uses system text selection UI in apps built with the iOS 27 SDK; consider highPriorityGesture for custom gestures",
+        "controlSize, buttonSizing, buttonRepeatBehavior, menuIndicatorVisibility, and ButtonBorderShape reset to defaults inside sheets and popovers in apps built with the 27 SDKs",
+        "toolbarMinimizationBehavior replaces toolbarMinimizeBehavior; toolbarColorScheme and toolbarVisibility accept .statusBar"
       ],
       limitations: [
         "Standard controls provide an accessibility baseline but custom and bridged views require explicit review",
-        "API availability varies within the framework"
+        "API availability varies within the framework",
+        "iOS 27 SDK behavior changes apply only to apps built with the 27 SDKs and can differ from earlier builds running on iOS 27",
+        "The .squareBorder and .roundedBorder text field styles are soft deprecated in favor of .bordered"
       ],
-      keywords: ["swiftui", "declarative ui", "view", "scene", "navigation", "layout"],
+      keywords: ["swiftui", "declarative ui", "view", "scene", "navigation", "layout", "document", "state macro"],
       official_documentation: [
         {
           title: "SwiftUI",
           url: "https://developer.apple.com/documentation/swiftui",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "SwiftUI apps",
           url: "https://developer.apple.com/documentation/technologyoverviews/swiftui",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "Understanding and improving SwiftUI performance",
           url: "https://developer.apple.com/documentation/xcode/understanding-and-improving-swiftui-performance",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "Document",
+          url: "https://developer.apple.com/documentation/swiftui/document",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "FileDocument",
+          url: "https://developer.apple.com/documentation/swiftui/filedocument",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "asyncImageURLSession(_:)",
+          url: "https://developer.apple.com/documentation/swiftui/view/asyncimageurlsession(_:)",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
         }
       ],
-      last_verified_at: "2026-08-30"
+      last_verified_at: "2026-09-30",
+      release_notes: [
+        {
+          title: "iOS and iPadOS 27 release notes",
+          url: "https://developer.apple.com/documentation/ios-ipados-release-notes/ios-ipados-27-release-notes",
+          source_type: "release_notes",
+          verified_at: "2026-09-30"
+        }
+      ]
     },
     {
       id: "uikit",
@@ -1116,13 +1554,16 @@ var capabilities_default = {
         tvOS: "9.0",
         visionOS: "1.0"
       },
-      sdk_availability: "Stable framework modules are present for the listed platforms; UIKit is unavailable for native macOS UI. Local interfaces were verified with Xcode 26.6 and SDK 26.5; Xcode 27 was not locally installed.",
+      sdk_availability: "Stable framework modules are present for the listed platforms; UIKit is unavailable for native macOS UI. Apps built with the iOS 27 SDK must adopt the scene-based life cycle or they fail to launch, and must include a launch screen. 27 details come from Apple release notes and documentation, not local SDK inspection.",
       stable_or_beta: "stable",
       on_device_level: "fully_on_device",
       network_requirement: "UIKit UI requires no network; integrated data and service APIs may require connectivity.",
       cloud_dependency: null,
       user_permissions: [],
-      info_plist_keys: [],
+      info_plist_keys: [
+        "UIApplicationSceneManifest (scene-based life cycle is required for apps built with the iOS 27 SDK)",
+        "One of UILaunchStoryboardName, UILaunchStoryboards, UILaunchScreen, or UILaunchScreens (required for iOS and iPadOS apps built with the 27.0 SDK)"
+      ],
       xcode_capabilities: [],
       entitlements: [],
       managed_entitlements: [],
@@ -1131,7 +1572,9 @@ var capabilities_default = {
         "Audit the protected-resource APIs and SDKs used by the UI; importing UIKit alone does not determine privacy-manifest declarations"
       ],
       app_review_considerations: [
-        "Protected-resource access initiated by UIKit flows still requires informed consent and the underlying API's purpose strings"
+        "Protected-resource access initiated by UIKit flows still requires informed consent and the underlying API's purpose strings",
+        "Apps built with the 27.0 SDK without a launch screen are rejected once the App Store begins accepting 27.0 SDK builds",
+        "Apps built with the latest SDK that have not adopted the scene-based life cycle fail to launch"
       ],
       security_considerations: [
         "Use the strongest practical data-protection class for files containing sensitive data",
@@ -1140,34 +1583,83 @@ var capabilities_default = {
       implementation_notes: [
         "Use the main thread or main actor for UI work",
         "Prefer standard system views before introducing custom views",
-        "Provide explicit accessibility metadata and behavior for custom controls"
+        "Provide explicit accessibility metadata and behavior for custom controls",
+        "Migrate to the scene-based life cycle: add UIApplicationSceneManifest or implement application(_:configurationForConnecting:options:); move per-UI life-cycle work to UISceneDelegate and UIWindowSceneDelegate",
+        "canOpenURL(_:) is deprecated in 27.0; attempt open(_:options:completionHandler:) and handle failure, or use universal links instead of custom URL schemes",
+        "UIScene.extendStateRestoration and completeStateRestoration extend state restoration across background to foreground transitions when linked on iOS 27",
+        "iPadOS 27 menus hide element images by default; set UIMenuElement.preferredImageVisibility (27.0) where an image should show",
+        "UINavigationItem.navigationBarMinimization replaces barMinimizeBehavior and barMinimizationSafeAreaAdjustment; windowExternalDisplayNonInteractive scenes are no longer offered automatically (use registerSceneAccessory with UISceneAccessory.externalNonInteractive)",
+        "Presented view controllers inherit traits through the superview chain in apps built with the iOS 27 SDK; drag interactions can be started by Siri without a user gesture, so avoid animation or modal UI in dragInteraction(_:sessionWillBegin:)"
       ],
       limitations: [
         "UIKit does not automatically make custom controls accessible or cross-platform",
-        "Hardware- and input-specific APIs have separate availability constraints"
+        "Hardware- and input-specific APIs have separate availability constraints",
+        "iOS 27 removes support for apps that have not adopted scenes when built with the latest SDK"
       ],
-      keywords: ["uikit", "ui", "view controller", "uiview", "table", "collection", "layout"],
+      keywords: [
+        "uikit",
+        "ui",
+        "view controller",
+        "uiview",
+        "table",
+        "collection",
+        "layout",
+        "scene lifecycle",
+        "launch screen"
+      ],
       official_documentation: [
         {
           title: "UIKit",
           url: "https://developer.apple.com/documentation/uikit",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "About app development with UIKit",
           url: "https://developer.apple.com/documentation/uikit/about-app-development-with-uikit",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "Accessibility for UIKit",
           url: "https://developer.apple.com/documentation/uikit/accessibility-for-uikit",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "Transitioning to the UIKit scene-based life cycle",
+          url: "https://developer.apple.com/documentation/uikit/transitioning-to-the-uikit-scene-based-life-cycle",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "canOpenURL(_:)",
+          url: "https://developer.apple.com/documentation/uikit/uiapplication/canopenurl(_:)",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "preferredImageVisibility",
+          url: "https://developer.apple.com/documentation/uikit/uimenuelement/preferredimagevisibility",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "UILaunchScreen",
+          url: "https://developer.apple.com/documentation/bundleresources/information-property-list/uilaunchscreen",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
         }
       ],
-      last_verified_at: "2026-08-30"
+      last_verified_at: "2026-09-30",
+      release_notes: [
+        {
+          title: "iOS and iPadOS 27 release notes",
+          url: "https://developer.apple.com/documentation/ios-ipados-release-notes/ios-ipados-27-release-notes",
+          source_type: "release_notes",
+          verified_at: "2026-09-30"
+        }
+      ]
     },
     {
       id: "foundation",
@@ -1200,7 +1692,7 @@ var capabilities_default = {
         visionOS: "1.0",
         watchOS: "2.0"
       },
-      sdk_availability: "Stable framework modules are present in the current Apple SDKs for the listed platforms; individual APIs have their own availability. Local interfaces were verified with Xcode 26.6 and SDK 26.5; Xcode 27 was not locally installed.",
+      sdk_availability: "Stable framework modules are present in the current Apple SDKs for the listed platforms; individual APIs have their own availability. Availability re-checked against Apple documentation and the iOS & iPadOS 27 release notes on 2026-09-30 (Xcode 27 / iOS 27 SDK); earlier local interface verification used Xcode 26.6 and SDK 26.5, and Xcode 27 was not locally installed.",
       stable_or_beta: "stable",
       on_device_level: "hybrid",
       network_requirement: "Most data, text, date, and file APIs are local; URL loading and remote-service APIs require connectivity.",
@@ -1215,7 +1707,8 @@ var capabilities_default = {
         "Audit the specific Foundation APIs and SDKs used; some APIs may require approved reasons or privacy-manifest declarations"
       ],
       required_reason_apis: [
-        "Determine applicable required-reason declarations from the concrete Foundation APIs used; the framework import alone is insufficient"
+        "Determine applicable required-reason declarations from the concrete Foundation APIs used; the framework import alone is insufficient",
+        "Disk-space resource keys such as volumeAvailableCapacityKey and volumeAvailableCapacityForImportantUsageKey are documented as fingerprinting-sensitive; declare the usage and reason in PrivacyInfo.xcprivacy"
       ],
       app_review_considerations: [
         "Network security exceptions and protected-resource access are reviewed according to the concrete APIs and behavior"
@@ -1228,35 +1721,70 @@ var capabilities_default = {
       implementation_notes: [
         "Treat individual API availability separately from framework availability",
         "Invalidate URLSession instances when their delegate lifecycle is complete",
-        "Use ephemeral URL sessions when persistent cookies, caches, and credentials are inappropriate"
+        "Use ephemeral URL sessions when persistent cookies, caches, and credentials are inappropriate",
+        "In iOS and iPadOS 27, volumeAvailableCapacityKey is truncated to 3 significant decimal digits at the block-count level (for example 123,456,789 blocks becomes 123,000,000 blocks); do not use it for exact free-space arithmetic",
+        "+[NSURL URLWithString:] no longer double-encodes the % of valid percent-escape sequences when it encodes other invalid characters in iOS 27; re-test URL strings that mix valid escapes with unescaped characters"
       ],
       limitations: [
         "App sandbox and data-protection rules constrain file access",
         "Background URLSession work remains system scheduled",
-        "Framework-level availability does not prove availability of every member API"
+        "Framework-level availability does not prove availability of every member API",
+        "Disk-space values from volumeAvailableCapacityKey are intentionally coarse on iOS 27 and are unsuitable for exact storage accounting"
       ],
-      keywords: ["foundation", "data", "date", "text", "file", "url", "localization", "network"],
+      keywords: [
+        "foundation",
+        "data",
+        "date",
+        "text",
+        "file",
+        "url",
+        "localization",
+        "network",
+        "volumeavailablecapacitykey",
+        "nsurl",
+        "percent encoding"
+      ],
       official_documentation: [
         {
           title: "Foundation",
           url: "https://developer.apple.com/documentation/foundation",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "Using the file system effectively",
           url: "https://developer.apple.com/documentation/foundation/using-the-file-system-effectively",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "Preventing insecure network connections",
           url: "https://developer.apple.com/documentation/security/preventing-insecure-network-connections",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "volumeAvailableCapacityKey",
+          url: "https://developer.apple.com/documentation/foundation/urlresourcekey/volumeavailablecapacitykey",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
         }
       ],
-      last_verified_at: "2026-08-30"
+      last_verified_at: "2026-09-30",
+      release_notes: [
+        {
+          title: "iOS and iPadOS 27 release notes",
+          url: "https://developer.apple.com/documentation/ios-ipados-release-notes/ios-ipados-27-release-notes",
+          source_type: "release_notes",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "Xcode 27 release notes",
+          url: "https://developer.apple.com/documentation/xcode-release-notes/xcode-27-release-notes",
+          source_type: "release_notes",
+          verified_at: "2026-09-30"
+        }
+      ]
     },
     {
       id: "urlsession",
@@ -1289,7 +1817,7 @@ var capabilities_default = {
         visionOS: "1.0",
         watchOS: "2.0"
       },
-      sdk_availability: "Stable URLSession APIs are present in the current Apple SDKs for the listed platforms; individual members have their own availability. Local interfaces were verified with Xcode 26.6 and SDK 26.5; Xcode 27 was not locally installed.",
+      sdk_availability: "Stable URLSession APIs are present in the current Apple SDKs for the listed platforms; individual members have their own availability. Local interfaces were verified with Xcode 26.6 and SDK 26.5; Xcode 27 was not locally installed. In current documentation URLSessionConfiguration.tlsMinimumSupportedProtocol, tlsMaximumSupportedProtocol, and URLSession.streamTask(with:) are marked deprecated at 27.2 (beta).",
       stable_or_beta: "stable",
       on_device_level: "hybrid",
       network_requirement: "Remote requests require a suitable network path and reachable endpoint; cached responses can support explicitly designed offline behavior.",
@@ -1323,7 +1851,10 @@ var capabilities_default = {
       limitations: [
         "The system schedules background transfers according to resource and connectivity conditions",
         "Force-quitting an iOS app cancels its background transfers until the user relaunches it",
-        "Feature-specific ATS, local-network, Bonjour, and multicast requirements remain separate from URLSession itself"
+        "Feature-specific ATS, local-network, Bonjour, and multicast requirements remain separate from URLSession itself",
+        "tlsMinimumSupportedProtocol and tlsMaximumSupportedProtocol (SSLProtocol) are marked deprecated at 27.2 beta; use tlsMinimumSupportedProtocolVersion and tlsMaximumSupportedProtocolVersion (iOS 13.0 and later)",
+        "URLSession.streamTask(with:) is marked deprecated at 27.2 beta; documentation points to Network framework connections",
+        "iOS 27 stricter TLS 1.2-minimum enforcement is documented for select system processes (MDM, enrollment, app installation, software updates), not as a change to URLSession defaults; ATS remains the app-level policy"
       ],
       keywords: ["urlsession", "networking", "http", "download", "upload", "background transfer"],
       official_documentation: [
@@ -1331,34 +1862,59 @@ var capabilities_default = {
           title: "URLSession",
           url: "https://developer.apple.com/documentation/foundation/urlsession",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "Downloading files in the background",
           url: "https://developer.apple.com/documentation/foundation/downloading-files-in-the-background",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "NSAppTransportSecurity",
           url: "https://developer.apple.com/documentation/bundleresources/information-property-list/nsapptransportsecurity",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "Preventing insecure network connections",
           url: "https://developer.apple.com/documentation/security/preventing-insecure-network-connections",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "TN3179: Understanding local network privacy",
           url: "https://developer.apple.com/documentation/technotes/tn3179-understanding-local-network-privacy",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "tlsMinimumSupportedProtocolVersion",
+          url: "https://developer.apple.com/documentation/foundation/urlsessionconfiguration/tlsminimumsupportedprotocolversion",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "NSRequiresNIAPTLSPackageVersion",
+          url: "https://developer.apple.com/documentation/bundleresources/information-property-list/nsrequiresniaptlspackageversion",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
         }
       ],
-      last_verified_at: "2026-08-30"
+      last_verified_at: "2026-09-30",
+      release_notes: [
+        {
+          title: "iOS and iPadOS 27 release notes",
+          url: "https://developer.apple.com/documentation/ios-ipados-release-notes/ios-ipados-27-release-notes",
+          source_type: "release_notes",
+          verified_at: "2026-09-30"
+        }
+      ],
+      recommended_alternatives: [
+        "Network framework connections instead of URLSession stream tasks",
+        "tlsMinimumSupportedProtocolVersion and tlsMaximumSupportedProtocolVersion instead of the SSLProtocol properties",
+        "NSRequiresNIAPTLSPackageVersion (26.4 and later) only when NIAP FCP_v2.1 TLS behavior is required"
+      ]
     },
     {
       id: "core-data",
@@ -1396,7 +1952,7 @@ var capabilities_default = {
         visionOS: "1.0",
         watchOS: "2.0"
       },
-      sdk_availability: "Stable Core Data APIs are present in the current Apple SDKs for the listed platforms; CloudKit integration and individual members have separate availability. Local interfaces were verified with Xcode 26.6 and SDK 26.5; Xcode 27 was not locally installed.",
+      sdk_availability: "Stable Core Data APIs are present in the current Apple SDKs for the listed platforms; CloudKit integration and individual members have separate availability. Local interfaces were verified with Xcode 26.6 and SDK 26.5; Xcode 27 SDK headers were not re-checked locally; iOS 27 additions were verified against Apple documentation and the iOS 27 release notes on 2026-09-30.",
       stable_or_beta: "stable",
       on_device_level: "primarily_on_device",
       network_requirement: "Local persistent stores require no network; CloudKit mirroring requires network access for synchronization.",
@@ -1432,34 +1988,34 @@ var capabilities_default = {
           title: "Core Data",
           url: "https://developer.apple.com/documentation/coredata",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "Setting up Core Data with CloudKit",
           url: "https://developer.apple.com/documentation/coredata/setting-up-core-data-with-cloudkit",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "Mirroring a Core Data store with CloudKit",
           url: "https://developer.apple.com/documentation/coredata/mirroring-a-core-data-store-with-cloudkit",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "Creating a Core Data model for CloudKit",
           url: "https://developer.apple.com/documentation/coredata/creating-a-core-data-model-for-cloudkit",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "NSPersistentCloudKitContainer",
           url: "https://developer.apple.com/documentation/coredata/nspersistentcloudkitcontainer",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         }
       ],
-      last_verified_at: "2026-08-30"
+      last_verified_at: "2026-09-30"
     },
     {
       id: "cloudkit",
@@ -1497,7 +2053,7 @@ var capabilities_default = {
         visionOS: "1.0",
         watchOS: "3.0"
       },
-      sdk_availability: "Stable CloudKit APIs are present in the current Apple SDKs for the listed platforms; individual members have their own availability. Local interfaces were verified with Xcode 26.6 and SDK 26.5; Xcode 27 was not locally installed.",
+      sdk_availability: "Stable CloudKit APIs are present in the current Apple SDKs for the listed platforms; individual members have their own availability. Local interfaces were verified with Xcode 26.6 and SDK 26.5; Xcode 27 SDK headers were not re-checked locally; iOS 27 additions were verified against Apple documentation and the iOS 27 release notes on 2026-09-30.",
       stable_or_beta: "stable",
       on_device_level: "cloud_required",
       network_requirement: "CloudKit operations require access to Apple's iCloud and CloudKit services; applications must design for offline and retry states.",
@@ -1529,7 +2085,8 @@ var capabilities_default = {
       limitations: [
         "Requests and storage are subject to CloudKit quotas and throttling",
         "Network, iCloud account, and service availability affect operations",
-        "Development and production environments have separate schema lifecycle considerations"
+        "Development and production environments have separate schema lifecycle considerations",
+        "Before iOS 27, saving a CKShare after an administrator participant demoted themselves to private user had no effect; iOS 27 fixes this"
       ],
       keywords: ["cloudkit", "icloud", "ckcontainer", "sync", "records", "assets", "sharing"],
       official_documentation: [
@@ -1537,40 +2094,48 @@ var capabilities_default = {
           title: "CloudKit",
           url: "https://developer.apple.com/documentation/cloudkit",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "Enabling CloudKit in your app",
           url: "https://developer.apple.com/documentation/cloudkit/enabling-cloudkit-in-your-app",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "CKContainer",
           url: "https://developer.apple.com/documentation/cloudkit/ckcontainer",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "Deploying an iCloud container's schema",
           url: "https://developer.apple.com/documentation/cloudkit/deploying-an-icloud-container-s-schema",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "TN3162: Understanding CloudKit throttles",
           url: "https://developer.apple.com/documentation/technotes/tn3162-understanding-cloudkit-throttles",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "iCloud services entitlement",
           url: "https://developer.apple.com/documentation/bundleresources/entitlements/com.apple.developer.icloud-services",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         }
       ],
-      last_verified_at: "2026-08-30"
+      last_verified_at: "2026-09-30",
+      release_notes: [
+        {
+          title: "iOS and iPadOS 27 release notes",
+          url: "https://developer.apple.com/documentation/ios-ipados-release-notes/ios-ipados-27-release-notes",
+          source_type: "release_notes",
+          verified_at: "2026-09-30"
+        }
+      ]
     },
     {
       id: "keychain-services",
@@ -1637,34 +2202,35 @@ var capabilities_default = {
           title: "Keychain Services",
           url: "https://developer.apple.com/documentation/security/keychain-services",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "Restricting keychain item accessibility",
           url: "https://developer.apple.com/documentation/security/restricting-keychain-item-accessibility",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "Configuring keychain sharing",
           url: "https://developer.apple.com/documentation/xcode/configuring-keychain-sharing",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "Sharing access to keychain items among a collection of apps",
           url: "https://developer.apple.com/documentation/security/sharing-access-to-keychain-items-among-a-collection-of-apps",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "TN3137: On Mac keychains",
           url: "https://developer.apple.com/documentation/technotes/tn3137-on-mac-keychains",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         }
       ],
-      last_verified_at: "2026-08-30"
+      last_verified_at: "2026-09-30",
+      release_notes: []
     },
     {
       id: "authenticationservices",
@@ -1699,7 +2265,7 @@ var capabilities_default = {
         visionOS: "1.0",
         watchOS: "6.0"
       },
-      sdk_availability: "The framework is stable on the listed platforms, but ASWebAuthenticationSession, Sign in with Apple, passkeys, and credential-provider APIs have distinct platform and member availability. Local interfaces were verified with Xcode 26.6 and SDK 26.5; Xcode 27 was not locally installed.",
+      sdk_availability: "The framework is stable on the listed platforms, but ASWebAuthenticationSession, Sign in with Apple, passkeys, and credential-provider APIs have distinct platform and member availability. Local interfaces were verified with Xcode 26.6 and SDK 26.5; Xcode 27 was not locally installed. iOS 27.0 adds ASDeliveredVerificationCodesManager and ASVerificationCode (stable at 27.0; iOS, iPadOS, Mac Catalyst, macOS, visionOS); the ASWebAuthenticationSession and SwiftUI WebAuthenticationSession callbackURLScheme entry points are marked deprecated at 27.2 in current documentation (27.2 is beta).",
       stable_or_beta: "stable",
       on_device_level: "hybrid",
       network_requirement: "Web authentication, Sign in with Apple, and passkey relying-party flows generally require reachable identity or web services; credential mediation and cryptographic operations are system managed.",
@@ -1729,12 +2295,17 @@ var capabilities_default = {
         "Configure the required capability and entitlement only for the selected authentication feature",
         "For passkeys, publish a valid apple-app-site-association file and matching webcredentials associated-domain entry",
         "Sign in with Apple APIs start at iOS 13.0 and have feature-specific availability separate from the framework minimum",
-        "Check feature-specific API availability instead of relying only on the framework minimum"
+        "Check feature-specific API availability instead of relying only on the framework minimum",
+        "27.0: ASDeliveredVerificationCodesManager streams one-time codes delivered to the system (for example email or SMS) to enabled credential providers only, requires the user's decision, and consumeOneTimeCode(_:) should be called only for codes actually submitted to a service",
+        "Use ASWebAuthenticationSession.init(url:callback:completionHandler:) and WebAuthenticationSession.authenticate(using:callback:preferredBrowserSession:additionalHeaderFields:) (17.4 and later) instead of the callbackURLScheme variants",
+        "ASCredentialUpdater is deprecated at 26.2; use ASCredentialDataManager"
       ],
       limitations: [
         "AuthenticationServices features have different platform and OS availability",
         "Web and relying-party configuration outside the app is required for several flows",
-        "Identity-provider, network, account, and iCloud Keychain state can affect authentication"
+        "Identity-provider, network, account, and iCloud Keychain state can affect authentication",
+        "init(url:callbackURLScheme:completionHandler:) and authenticate(using:callbackURLScheme:preferredBrowserSession:) are marked deprecated at 27.2 (beta); callback-based replacements require 17.4 or later, so older deployment targets need availability checks",
+        "ASDeliveredVerificationCodesManager is limited to enabled credential providers and user-approved access, and is not listed for tvOS or watchOS"
       ],
       keywords: ["authenticationservices", "authentication", "sign in with apple", "passkey", "webauthn", "oauth"],
       official_documentation: [
@@ -1742,52 +2313,68 @@ var capabilities_default = {
           title: "AuthenticationServices",
           url: "https://developer.apple.com/documentation/authenticationservices",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "ASWebAuthenticationSession",
           url: "https://developer.apple.com/documentation/authenticationservices/aswebauthenticationsession",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "Implementing user authentication with Sign in with Apple",
           url: "https://developer.apple.com/documentation/authenticationservices/implementing-user-authentication-with-sign-in-with-apple",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "Supporting passkeys",
           url: "https://developer.apple.com/documentation/authenticationservices/supporting-passkeys",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "Sign in with Apple entitlement",
           url: "https://developer.apple.com/documentation/bundleresources/entitlements/com.apple.developer.applesignin",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "Associated Domains Entitlement",
           url: "https://developer.apple.com/documentation/bundleresources/entitlements/com.apple.developer.associated-domains",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "AutoFill credential provider entitlement",
           url: "https://developer.apple.com/documentation/bundleresources/entitlements/com.apple.developer.authentication-services.autofill-credential-provider",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "App Review Guidelines",
           url: "https://developer.apple.com/app-store/review/guidelines/",
           source_type: "app_store_review_guidelines",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "ASDeliveredVerificationCodesManager",
+          url: "https://developer.apple.com/documentation/authenticationservices/asdeliveredverificationcodesmanager",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "WebAuthenticationSession",
+          url: "https://developer.apple.com/documentation/authenticationservices/webauthenticationsession",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
         }
       ],
-      last_verified_at: "2026-08-30"
+      last_verified_at: "2026-09-30",
+      release_notes: [],
+      recommended_alternatives: [
+        "ASWebAuthenticationSession.Callback-based initializer and SwiftUI authenticate(using:callback:...) for web authentication on iOS 17.4 and later"
+      ]
     },
     {
       id: "cryptokit",
@@ -1819,7 +2406,7 @@ var capabilities_default = {
         visionOS: "1.0",
         watchOS: "6.0"
       },
-      sdk_availability: "Stable CryptoKit APIs are present in the current Apple SDKs for the listed platforms; algorithms and Secure Enclave members have their own availability. Local interfaces were verified with Xcode 26.6 and SDK 26.5; Xcode 27 was not locally installed.",
+      sdk_availability: "Stable CryptoKit APIs are present in the current Apple SDKs for the listed platforms; algorithms and Secure Enclave members have their own availability. Local interfaces were verified with Xcode 26.6 and SDK 26.5; Xcode 27 was not locally installed. iOS 27.0 adds KEMOneTimePrivateKey and one-time private keys for ML-KEM and X-Wing, in-place ChaChaPoly seal and open, HKDF extract and expand, and SymmetricKey byte-access initializers; these are stable at 27.0 in the iOS 27 SDK.",
       stable_or_beta: "stable",
       on_device_level: "fully_on_device",
       network_requirement: "CryptoKit cryptographic operations require no network; protocols or services built with their results may require connectivity.",
@@ -1845,12 +2432,14 @@ var capabilities_default = {
       implementation_notes: [
         "Select algorithms and key sizes supported by the concrete CryptoKit API",
         "Persist a CryptoKit key's representation only with an appropriate keychain protection policy",
-        "Keep biometric access control in the Security and LocalAuthentication layer rather than treating it as a CryptoKit requirement"
+        "Keep biometric access control in the Security and LocalAuthentication layer rather than treating it as a CryptoKit requirement",
+        "27.0 additions (KEMOneTimePrivateKey, in-place ChaChaPoly, HKDF extract/expand, SymmetricKey.bytes) need runtime availability checks when the deployment target is below 27.0"
       ],
       limitations: [
         "Secure Enclave support depends on device hardware and the selected key type",
         "CryptoKit does not provide durable key storage by itself",
-        "Framework availability does not prove availability of every algorithm or member API"
+        "Framework availability does not prove availability of every algorithm or member API",
+        "One-time KEM private keys can decapsulate only once; do not persist or reuse them as long-term keys"
       ],
       keywords: ["cryptokit", "cryptography", "encryption", "hash", "signature", "key agreement", "secure enclave"],
       official_documentation: [
@@ -1858,40 +2447,47 @@ var capabilities_default = {
           title: "CryptoKit",
           url: "https://developer.apple.com/documentation/cryptokit",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "SHA256",
           url: "https://developer.apple.com/documentation/cryptokit/sha256",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "SecureEnclave",
           url: "https://developer.apple.com/documentation/cryptokit/secureenclave",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "Storing CryptoKit keys in the keychain",
           url: "https://developer.apple.com/documentation/cryptokit/storing-cryptokit-keys-in-the-keychain",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "Protecting keys with the Secure Enclave",
           url: "https://developer.apple.com/documentation/security/protecting-keys-with-the-secure-enclave",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "Complying with encryption export regulations",
           url: "https://developer.apple.com/documentation/security/complying-with-encryption-export-regulations",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "KEMOneTimePrivateKey",
+          url: "https://developer.apple.com/documentation/cryptokit/kemonetimeprivatekey",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
         }
       ],
-      last_verified_at: "2026-08-30"
+      last_verified_at: "2026-09-30",
+      release_notes: []
     },
     {
       id: "apns",
@@ -1914,7 +2510,7 @@ var capabilities_default = {
         "Legacy-only UIApplication or NSApplication remote-notification registration paths outside the current UserNotifications integration baseline"
       ],
       related_frameworks: ["UserNotifications"],
-      related_capabilities: ["Push Notifications", "Background Modes"],
+      related_capabilities: ["Push Notifications", "Background Modes", "nowplaying"],
       related_entitlements: ["aps-environment", "com.apple.developer.aps-environment"],
       platforms: ["iOS", "iPadOS", "Mac Catalyst", "macOS", "tvOS", "visionOS", "watchOS"],
       minimum_os_version: {
@@ -1955,7 +2551,8 @@ var capabilities_default = {
         "Register with APNs independently from requesting visible-notification authorization",
         "Forward each current device token to the provider and update it when the system issues a new value",
         "Use the APNs HTTP/2 provider API over TLS and construct payloads for the intended push type",
-        "Treat deployment support that depends on legacy registration paths as separate compatibility research"
+        "Treat deployment support that depends on legacy registration paths as separate compatibility research",
+        "Now Playing remote media sessions use the separate nowplaying push type; see the nowplaying record for its topic and iOS 27 token behavior"
       ],
       limitations: [
         "Ordinary remote-notification payloads are limited to 4 KB",
@@ -1968,40 +2565,41 @@ var capabilities_default = {
           title: "Registering your app with APNs",
           url: "https://developer.apple.com/documentation/usernotifications/registering-your-app-with-apns",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "Setting up a remote notification server",
           url: "https://developer.apple.com/documentation/usernotifications/setting-up-a-remote-notification-server",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "APNs environment entitlement",
           url: "https://developer.apple.com/documentation/bundleresources/entitlements/aps-environment",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "Asking permission to use notifications",
           url: "https://developer.apple.com/documentation/usernotifications/asking-permission-to-use-notifications",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "Pushing background updates to your app",
           url: "https://developer.apple.com/documentation/usernotifications/pushing-background-updates-to-your-app",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "Generating a remote notification",
           url: "https://developer.apple.com/documentation/usernotifications/generating-a-remote-notification",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         }
       ],
-      last_verified_at: "2026-08-30"
+      last_verified_at: "2026-09-30",
+      release_notes: []
     },
     {
       id: "accessibility",
@@ -2052,7 +2650,8 @@ var capabilities_default = {
         "Treat SwiftUI, UIKit, and AppKit label, value, trait, action, focus, and navigation APIs as related UI guidance with independent availability",
         "Prefer standard system controls and add explicit semantics and actions to custom or bridged controls",
         "Support Dynamic Type, sufficient contrast, reduced motion, alternate input, and logical focus where applicable",
-        "Test complete common tasks with actual assistive technologies on supported devices"
+        "Test complete common tasks with actual assistive technologies on supported devices",
+        "Xcode 27 adds XCUIVoiceOverService to XCTest for driving VoiceOver in UI tests; still verify with real assistive technologies"
       ],
       limitations: [
         "Framework availability does not prove availability of every accessibility feature or setting",
@@ -2072,40 +2671,48 @@ var capabilities_default = {
           title: "Accessibility",
           url: "https://developer.apple.com/documentation/accessibility",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "Accessibility fundamentals",
           url: "https://developer.apple.com/documentation/swiftui/accessibility-fundamentals",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "Accessibility for UIKit",
           url: "https://developer.apple.com/documentation/uikit/accessibility-for-uikit",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "Human Interface Guidelines: Accessibility",
           url: "https://developer.apple.com/design/human-interface-guidelines/accessibility",
           source_type: "hig",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "Overview of Accessibility Nutrition Labels",
           url: "https://developer.apple.com/help/app-store-connect/manage-app-accessibility/overview-of-accessibility-nutrition-labels",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "Protecting user data with App Sandbox",
           url: "https://developer.apple.com/documentation/security/protecting-user-data-with-app-sandbox",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         }
       ],
-      last_verified_at: "2026-08-30"
+      last_verified_at: "2026-09-30",
+      release_notes: [
+        {
+          title: "Xcode 27 release notes",
+          url: "https://developer.apple.com/documentation/xcode-release-notes/xcode-27-release-notes",
+          source_type: "release_notes",
+          verified_at: "2026-09-30"
+        }
+      ]
     },
     {
       id: "apptrackingtransparency",
@@ -2135,13 +2742,16 @@ var capabilities_default = {
         tvOS: "14.0",
         visionOS: "1.0"
       },
-      sdk_availability: "The ATT API is stable at the listed framework minimums; tracking and IDFA policy enforcement begins with iOS, iPadOS, and tvOS 14.5. The API is present on macOS 11 or later, but the locally verified SDK documents trackingAuthorizationStatus as always notDetermined and the advertising identifier as all zeros, so macOS has no usable ATT authorization minimum. Local interfaces were verified with Xcode 26.6 and SDK 26.5; Xcode 27 was not locally installed.",
+      sdk_availability: "The ATT API is stable at the listed framework minimums; tracking and IDFA policy enforcement begins with iOS, iPadOS, and tvOS 14.5. The API is present on macOS 11 or later, but the locally verified SDK documents trackingAuthorizationStatus as always notDetermined and the advertising identifier as all zeros, so macOS has no usable ATT authorization minimum. Local interfaces were verified with Xcode 26.6 and SDK 26.5; Xcode 27 was not locally installed. iOS and iPadOS 27.2 beta 2 adds requestTrackingAuthorization(preferExpandedInterface:additionalInformationAction:completionHandler:) and the NSUserTrackingMarkdownUsageDescription key (iOS, iPadOS, Mac Catalyst for the method; iOS and iPadOS for the key); both are beta, not part of iOS 27.0 GA, and are not available on tvOS, visionOS, or macOS.",
       stable_or_beta: "stable",
       on_device_level: "fully_on_device",
       network_requirement: "Reading status and presenting the system authorization request requires no network; any authorized tracking or advertising service has its own network dependencies.",
       cloud_dependency: null,
       user_permissions: ["Tracking authorization when the app performs tracking as Apple defines it"],
-      info_plist_keys: ["NSUserTrackingUsageDescription only when requesting tracking authorization"],
+      info_plist_keys: [
+        "NSUserTrackingUsageDescription only when requesting tracking authorization",
+        "NSUserTrackingMarkdownUsageDescription (iOS and iPadOS 27.2 beta, optional) supplies Markdown text (bold, italic, bullet lists, paragraph breaks) for the EU full-page sheet; falls back to NSUserTrackingUsageDescription"
+      ],
       xcode_capabilities: [],
       entitlements: [],
       managed_entitlements: [],
@@ -2162,12 +2772,16 @@ var capabilities_default = {
       implementation_notes: [
         "Call requestTrackingAuthorization only while the app is active and handle every authorization status",
         "Do not coordinate concurrent permission prompts; request ATT in a deliberate user-facing sequence",
-        "Expect the IDFA to be all zeros without authorization and in documented unsupported environments"
+        "Expect the IDFA to be all zeros without authorization and in documented unsupported environments",
+        "27.2 beta: requestTrackingAuthorization(preferExpandedInterface:additionalInformationAction:completionHandler:) can request the expanded full-page sheet in the EU and adds an Additional Information button when an action is supplied; the completion handler then receives notDetermined and the app must show its own UI and call the method again",
+        "27.2 beta 2 release notes: the alternative expanded prompt is required for users in France, Germany, Italy, Poland, and Romania; in the EU the system records the answer date and allows another request after a year",
+        "Gate the beta method with availability checks (iOS and iPadOS 27.2) and keep requestTrackingAuthorization(completionHandler:) for earlier OS versions and other platforms"
       ],
       limitations: [
-        "The system generally presents the ATT prompt only once per app installation",
+        "The system generally presents the ATT prompt only once per app installation; in the European Union, 27.2 beta documentation allows another request after a year, and the beta expanded prompt is regional",
         "Management, account, age, or system restrictions can produce restricted or denied status without a prompt",
-        "On macOS the local SDK reports trackingAuthorizationStatus as notDetermined and IDFA as zero; IDFA is also zero in Simulator and compatible iOS or iPadOS apps running on visionOS"
+        "On macOS the local SDK reports trackingAuthorizationStatus as notDetermined and IDFA as zero; IDFA is also zero in Simulator and compatible iOS or iPadOS apps running on visionOS",
+        "27.2 beta APIs are subject to change before release and are unavailable on tvOS, visionOS, and macOS"
       ],
       keywords: ["apptrackingtransparency", "att", "tracking permission", "idfa", "advertising identifier"],
       official_documentation: [
@@ -2175,34 +2789,58 @@ var capabilities_default = {
           title: "App Tracking Transparency",
           url: "https://developer.apple.com/documentation/apptrackingtransparency",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "Requesting tracking authorization",
           url: "https://developer.apple.com/documentation/apptrackingtransparency/attrackingmanager/requesttrackingauthorization(completionhandler:)",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "NSUserTrackingUsageDescription",
           url: "https://developer.apple.com/documentation/bundleresources/information-property-list/nsusertrackingusagedescription",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "User privacy and data use",
           url: "https://developer.apple.com/app-store/user-privacy-and-data-use/",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "Advertising identifier",
           url: "https://developer.apple.com/documentation/adsupport/asidentifiermanager/advertisingidentifier",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "requestTrackingAuthorization(preferExpandedInterface:additionalInformationAction:completionHandler:)",
+          url: "https://developer.apple.com/documentation/apptrackingtransparency/attrackingmanager/requesttrackingauthorization(preferexpandedinterface:additionalinformationaction:completionhandler:)",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "NSUserTrackingMarkdownUsageDescription",
+          url: "https://developer.apple.com/documentation/bundleresources/information-property-list/nsusertrackingmarkdownusagedescription",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
         }
       ],
-      last_verified_at: "2026-08-30"
+      last_verified_at: "2026-09-30",
+      release_notes: [
+        {
+          title: "iOS and iPadOS 27.2 beta 2 release notes",
+          url: "https://developer.apple.com/documentation/ios-ipados-release-notes/ios-ipados-27_2-release-notes",
+          source_type: "release_notes",
+          verified_at: "2026-09-30"
+        }
+      ],
+      region_restrictions: [
+        "27.2 beta expanded prompt: applies only when the device is in a specific European Union country and signed in with an Apple Account set to a specific EU country or region; France, Germany, Italy, Poland, and Romania always get the full-page sheet (beta)",
+        "Outside the European Union the beta method behaves like requestTrackingAuthorization(completionHandler:) and shows the standard alert"
+      ]
     },
     {
       id: "app-attest",
@@ -2278,40 +2916,41 @@ var capabilities_default = {
           title: "DCAppAttestService",
           url: "https://developer.apple.com/documentation/devicecheck/dcappattestservice",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "isSupported",
           url: "https://developer.apple.com/documentation/devicecheck/dcappattestservice/issupported",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "Establishing your app's integrity",
           url: "https://developer.apple.com/documentation/devicecheck/establishing-your-app-s-integrity",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "Validating apps that connect to your server",
           url: "https://developer.apple.com/documentation/devicecheck/validating-apps-that-connect-to-your-server",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "App Attest environment entitlement",
           url: "https://developer.apple.com/documentation/bundleresources/entitlements/com.apple.developer.devicecheck.appattest-environment",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "Preparing to use the App Attest service",
           url: "https://developer.apple.com/documentation/devicecheck/preparing-to-use-the-app-attest-service",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         }
       ],
-      last_verified_at: "2026-08-30"
+      last_verified_at: "2026-09-30",
+      release_notes: []
     },
     {
       id: "avfoundation",
@@ -2344,10 +2983,12 @@ var capabilities_default = {
         visionOS: "1.0",
         watchOS: "3.0"
       },
-      sdk_availability: "The AVFoundation framework is stable at the listed platform lineage minimums; capture, media, codec, and member availability varies. The iPadOS minimum follows the iOS lineage even though current DocC labels iPadOS 13.1. Local interfaces were verified with Xcode 26.6 and SDK 26.5; Xcode 27 was not locally installed.",
+      sdk_availability: "The AVFoundation framework is stable at the listed platform lineage minimums; capture, media, codec, and member availability varies. The iPadOS minimum follows the iOS lineage even though current DocC labels iPadOS 13.1. Availability re-checked against Apple documentation on 2026-09-30 for the iOS 27 SDK (Xcode 27); iOS 27.0 additions include AVAssetWritingPlanner, AVCaptureBroadcastVideoOutput, AVProVideoStorage, and AVPlayerItemSampleBufferOutput. Earlier local interface verification used Xcode 26.6 and SDK 26.5; Xcode 27 was not locally installed.",
       stable_or_beta: "stable",
       hardware_requirements: [
-        "Compatible camera or microphone hardware only for the corresponding capture feature; check concrete devices at runtime"
+        "Compatible camera or microphone hardware only for the corresponding capture feature; check concrete devices at runtime",
+        "AVCaptureBroadcastVideoOutput (iOS 27) delivers video and ancillary data through DisplayPort hardware (USB-C DP Alt Mode) and is not supported by every device format",
+        "Center Stage front-camera capture (Apple sample, iOS 27) needs an iPhone with a Center Stage front camera such as iPhone 17, iPhone Air, or iPhone 17 Pro"
       ],
       on_device_level: "hybrid",
       network_requirement: "Local playback, capture, processing, and export require no network; remote assets and streams require connectivity and a reachable service.",
@@ -2392,7 +3033,10 @@ var capabilities_default = {
       implementation_notes: [
         "Check authorization before creating or starting protected capture inputs",
         "Observe session interruptions, route changes, failures, and application lifecycle",
-        "Check concrete API, codec, device, and hardware availability at runtime"
+        "Check concrete API, codec, device, and hardware availability at runtime",
+        "iOS 27 adds AVAssetWritingPlanner for incremental, resumable file writing (not for real-time use; not every track can be written incrementally), AVProVideoStorage for pre-allocated high-data-rate (for example ProRes) capture storage, AVPlayerItemSampleBufferOutput for playback sample buffers, and AppleLog2 video log transfer function support",
+        "Before adding AVCaptureBroadcastVideoOutput to a session, check AVCaptureDeviceFormat.unsupportedCaptureOutputClasses; an unsupported format leaves the connection inactive and delivers no samples",
+        "Apple's iOS 27 AVCam guidance covers deferred capture-output start for faster preview and applying RotationCoordinator angles to keep preview and captures upright"
       ],
       limitations: [
         "Ordinary playback and file processing require no camera, microphone, or photo-library permission",
@@ -2400,7 +3044,9 @@ var capabilities_default = {
         "tvOS camera and microphone capture is limited to supported Continuity devices and hardware on newer tvOS versions",
         "visionOS main-camera access is a separate enterprise ARKit capability with its own entitlement, license, and purpose string, not general AVFoundation access",
         "Background execution remains system controlled even with an eligible audio mode",
-        "com.apple.developer.avfoundation.multitasking-camera-access is deprecated in iOS 18, begins at iOS 13.5, is restricted to voip background apps, and is needed only for the documented legacy pre-iOS 16 deployment-target case"
+        "com.apple.developer.avfoundation.multitasking-camera-access is deprecated in iOS 18, begins at iOS 13.5, is restricted to voip background apps, and is needed only for the documented legacy pre-iOS 16 deployment-target case",
+        "Deprecated in the 27.0 SDKs: AVAggregateAssetDownloadTask (use assetDownloadTask(withConfiguration:) APIs), AVQueuedSampleBufferRendering (use AVSampleBufferVideoRenderer or AVSampleBufferAudioRenderer with a render synchronizer), AVAssetWriterInputPixelBufferAdaptor (use AVAssetWriter.inputPixelBufferReceiver(for:pixelBufferAttributes:)), AVAssetReaderOutputMetadataAdaptor (use AVAssetReader.outputMetadataProvider(for:)), AVSampleBufferAttachContentKey (use CMReadySampleBuffer.attach(contentKey:)); the writer metadata and tagged-pixel-buffer-group input adaptors are also marked deprecated in 27.0",
+        "The iOS 27 AVFoundation additions listed here have a 27.0 minimum and are not available on earlier systems"
       ],
       keywords: ["avfoundation", "audio", "video", "media", "playback", "capture", "camera", "microphone"],
       official_documentation: [
@@ -2408,40 +3054,67 @@ var capabilities_default = {
           title: "AVFoundation",
           url: "https://developer.apple.com/documentation/avfoundation",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "Requesting authorization to capture and save media",
           url: "https://developer.apple.com/documentation/avfoundation/requesting-authorization-to-capture-and-save-media",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "Configuring your app for media playback",
           url: "https://developer.apple.com/documentation/avfoundation/configuring-your-app-for-media-playback",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "Accessing the camera while multitasking on iPad",
           url: "https://developer.apple.com/documentation/avkit/accessing-the-camera-while-multitasking-on-ipad",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "Camera entitlement",
           url: "https://developer.apple.com/documentation/bundleresources/entitlements/com.apple.security.device.camera",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-31"
+          verified_at: "2026-09-30"
         },
         {
           title: "Audio Input entitlement",
           url: "https://developer.apple.com/documentation/bundleresources/entitlements/com.apple.security.device.audio-input",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-31"
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "AVAssetWritingPlanner",
+          url: "https://developer.apple.com/documentation/avfoundation/avassetwritingplanner",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "AVCaptureBroadcastVideoOutput",
+          url: "https://developer.apple.com/documentation/avfoundation/avcapturebroadcastvideooutput",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "Supporting Center Stage front camera in your iOS app",
+          url: "https://developer.apple.com/documentation/avfoundation/supporting-center-stage-front-camera-in-your-ios-app",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
         }
       ],
-      last_verified_at: "2026-08-31"
+      last_verified_at: "2026-09-30",
+      deprecated_status: null,
+      release_notes: [
+        {
+          title: "iOS and iPadOS 27 release notes",
+          url: "https://developer.apple.com/documentation/ios-ipados-release-notes/ios-ipados-27-release-notes",
+          source_type: "release_notes",
+          verified_at: "2026-09-30"
+        }
+      ]
     },
     {
       id: "photokit",
@@ -2474,7 +3147,7 @@ var capabilities_default = {
         visionOS: "1.0",
         watchOS: "10.0"
       },
-      sdk_availability: "The PhotoKit umbrella technology is stable at the listed minimums, while PHPhotoLibrary and individual APIs have separate availability; PHPhotoLibrary begins on macOS 10.13. The watchOS PhotoKit collection baseline is 10.0, while PhotosPicker and PhotosPickerItem begin at watchOS 9.0; the locally verified SDK provides this picker subset, not Photos.framework or PHPhotoLibrary library-query and mutation APIs. Local interfaces were verified with Xcode 26.6 and SDK 26.5; Xcode 27 was not locally installed.",
+      sdk_availability: "The PhotoKit umbrella technology is stable at the listed minimums, while PHPhotoLibrary and individual APIs have separate availability; PHPhotoLibrary begins on macOS 10.13. The watchOS PhotoKit collection baseline is 10.0, while PhotosPicker and PhotosPickerItem begin at watchOS 9.0; the locally verified SDK provides this picker subset, not Photos.framework or PHPhotoLibrary library-query and mutation APIs. iOS 27.0 adds PHAssetResource.filename (replacing the deprecated originalFilename), PHAssetExtendedMetadata, PHAsset.rating, PHAsset.OriginalResourceChoice for RAW+JPEG, PHPhotoLibraryPersistentChangesObserver, and the PHBackgroundResourceUploadJobExtension upload-job model (PHAssetResourceUploadJob began at iOS 26.1). Documentation lists 27.2 deprecations (see limitations); the 27.2 SDK is beta. Availability re-checked against Apple documentation on 2026-09-30 (Xcode 27 / iOS 27 SDK); earlier local interface verification used Xcode 26.6 and SDK 26.5, and Xcode 27 was not locally installed.",
       stable_or_beta: "stable",
       on_device_level: "hybrid",
       network_requirement: "Locally available assets require no network; iCloud Photos resources may require network access when the app allows downloading them.",
@@ -2514,51 +3187,96 @@ var capabilities_default = {
         "Treat entity_type framework as the registry's closest fit for Apple's multi-framework PhotoKit technology",
         "Request PHAccessLevel.addOnly or readWrite according to the operation and handle every authorization state",
         "Observe library changes and tolerate assets becoming unavailable",
-        "Use PhotosUI picker flows when user-selected items are sufficient and library-wide authorization is unnecessary"
+        "Use PhotosUI picker flows when user-selected items are sufficient and library-wide authorization is unnecessary",
+        "Read PHAssetResource.filename (iOS 27.0, nullable) instead of originalFilename, which iOS 27 deprecates because it was incorrectly marked non-nullable; handle nil",
+        "PHAsset.addedDate (iOS 26.0) could return nil despite its non-nullable declaration before the iOS 27 fix; keep a nil-tolerant path when supporting iOS 26",
+        "PHAsset.extendedMetadata (caption, keywords, originalFilename; iOS 27.0) is fetched on demand and can be prefetched with PHFetchOptions.prefetchAssetExtendedMetadata",
+        "originalResourceChoice on PHAsset and PHAssetCreationRequest (iOS 27.0) applies to RAW+JPEG assets only and setting it on single-original assets is an error",
+        "Background resource uploads run in an app extension (com.apple.photos.background-upload) that adopts PHBackgroundResourceUploadJobExtension on iOS 27; PHBackgroundResourceUploadExtension is deprecated in 27.0; jobs are capped by PHAssetResourceUploadJob.jobLimit and must be acknowledged or retried to free slots"
       ],
       limitations: [
         "PhotosUI pickers are a separate framework and can provide selected items without PhotoKit library authorization",
         "watchOS provides the PhotosUI picker subset rather than full PHPhotoLibrary querying or mutation",
         "Limited read-write authorization exposes only selected assets, prevents creating or fetching user albums, and adds newly created assets to the limited selection",
-        "Asset retrieval can depend on iCloud Photos, network state, and request policy"
+        "Asset retrieval can depend on iCloud Photos, network state, and request policy",
+        "Deprecated with a 27.2 SDK (beta) availability marker in current documentation: PHPhotoLibrary.requestAuthorization(_:) (use requestAuthorization(for:handler:)) and PHAssetResource.uniformTypeIdentifier (use contentType)",
+        "Existing App Intents entities conforming to @AppEntity(schema: .photos.asset) might no longer compile against the 27 SDKs because the schema gained properties; adopt them behind an availability check (iOS 27 release notes known issue)",
+        "PHAssetResource.filename, PHAssetExtendedMetadata, and the persistent-changes observer require iOS 27.0; guard with availability checks"
       ],
       recommended_alternatives: [
         "PhotosUI or SwiftUI PhotosPicker for user-selected media without library-wide authorization"
       ],
-      keywords: ["photokit", "photos", "photo library", "phphotolibrary", "limited photos", "assets"],
+      keywords: [
+        "photokit",
+        "photos",
+        "photo library",
+        "phphotolibrary",
+        "limited photos",
+        "assets",
+        "phassetresource filename",
+        "addeddate",
+        "photo upload job",
+        "extended metadata"
+      ],
       official_documentation: [
         {
           title: "PhotoKit",
           url: "https://developer.apple.com/documentation/photokit",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "Delivering an enhanced privacy experience in your Photos app",
           url: "https://developer.apple.com/documentation/photokit/delivering-an-enhanced-privacy-experience-in-your-photos-app",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "Selecting photos and videos in iOS",
           url: "https://developer.apple.com/documentation/photokit/selecting-photos-and-videos-in-ios",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "PhotosUI",
           url: "https://developer.apple.com/documentation/photosui",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "Photos Library entitlement",
           url: "https://developer.apple.com/documentation/bundleresources/entitlements/com.apple.security.personal-information.photos-library",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-31"
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "filename",
+          url: "https://developer.apple.com/documentation/photos/phassetresource/filename",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "PHAssetExtendedMetadata",
+          url: "https://developer.apple.com/documentation/photos/phassetextendedmetadata",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "PHAssetResourceUploadJob",
+          url: "https://developer.apple.com/documentation/photos/phassetresourceuploadjob",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
         }
       ],
-      last_verified_at: "2026-08-31"
+      last_verified_at: "2026-09-30",
+      release_notes: [
+        {
+          title: "iOS and iPadOS 27 release notes",
+          url: "https://developer.apple.com/documentation/ios-ipados-release-notes/ios-ipados-27-release-notes",
+          source_type: "release_notes",
+          verified_at: "2026-09-30"
+        }
+      ]
     },
     {
       id: "vision",
@@ -2566,12 +3284,13 @@ var capabilities_default = {
       aliases: ["Vision framework", "VNRequest"],
       category: "ai_ml",
       entity_type: "framework",
-      summary: "Apple's on-device computer-vision framework for analyzing images and video with built-in requests or compatible Core ML models.",
+      summary: "Apple's on-device computer-vision framework for analyzing images and video with built-in requests, compatible Core ML models, or (iOS 27) as tools for Foundation Models.",
       supported_use_cases: [
         "Run supported image classification, detection, recognition, segmentation, and tracking requests",
         "Recognize text, barcodes, faces, body or hand poses, and other request-specific features",
         "Analyze image sequences and video frames",
-        "Use compatible Core ML models through Vision requests"
+        "Use compatible Core ML models through Vision requests",
+        "Give Foundation Models image analysis through OCRTool and BarcodeReaderTool on iOS 27 and later"
       ],
       unsupported_use_cases: [
         "Capturing camera frames or selecting photo-library assets",
@@ -2580,7 +3299,7 @@ var capabilities_default = {
         "Assuming every request, revision, language, or compute path exists on every supported OS or device",
         "Guaranteed accuracy or identical results across request revisions"
       ],
-      related_frameworks: ["Core ML", "AVFoundation", "Photos"],
+      related_frameworks: ["Core ML", "AVFoundation", "Photos", "Foundation Models"],
       platforms: ["iOS", "iPadOS", "Mac Catalyst", "macOS", "tvOS", "visionOS"],
       minimum_os_version: {
         iOS: "11.0",
@@ -2590,7 +3309,7 @@ var capabilities_default = {
         tvOS: "11.0",
         visionOS: "1.0"
       },
-      sdk_availability: "VNRequest is stable at the listed minimums; concrete requests, revisions, languages, and compute options have independent availability. The locally verified watchOS SDK 26.5 has no Vision.framework, so newer post-boundary watchOS documentation is not claimed. Local interfaces were verified with Xcode 26.6 and SDK 26.5; Xcode 27 was not locally installed.",
+      sdk_availability: "VNRequest is stable at the listed minimums; concrete requests, revisions, languages, and compute options have independent availability. The locally verified watchOS SDK 26.5 has no Vision.framework, so newer post-boundary watchOS documentation is not claimed. Local interfaces were verified with Xcode 26.6 and SDK 26.5; Xcode 27 SDK headers were not re-checked locally; iOS 27 additions were verified against Apple documentation and the iOS 27 release notes on 2026-09-30.",
       stable_or_beta: "stable",
       on_device_level: "fully_on_device",
       network_requirement: "Built-in Vision requests and local Core ML model execution require no network; obtaining input or models can have separate dependencies.",
@@ -2615,12 +3334,14 @@ var capabilities_default = {
       implementation_notes: [
         "Check the concrete request revision and supported recognition languages at runtime",
         "Normalize image orientation and manage request handlers away from UI-critical work",
-        "Request camera or photo-library access only through the framework that supplies the input"
+        "Request camera or photo-library access only through the framework that supplies the input",
+        "Gate OCRTool and BarcodeReaderTool behind iOS 27 availability checks; OCRTool is not listed for watchOS"
       ],
       limitations: [
         "Accuracy, latency, memory, and supported revisions vary by request, input quality, OS, and device",
         "No Neural Engine or other specific accelerator is a framework-wide requirement",
-        "VisionKit is a separate framework with different UI and availability contracts"
+        "VisionKit is a separate framework with different UI and availability contracts",
+        "Foundation Models tools require iOS 27.0 or later and a Foundation Models session"
       ],
       keywords: ["vision", "computer vision", "vnrequest", "ocr", "image analysis", "object detection"],
       official_documentation: [
@@ -2628,16 +3349,36 @@ var capabilities_default = {
           title: "Vision",
           url: "https://developer.apple.com/documentation/vision",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "VNRequest",
           url: "https://developer.apple.com/documentation/vision/vnrequest",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "OCRTool",
+          url: "https://developer.apple.com/documentation/vision/ocrtool",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "BarcodeReaderTool",
+          url: "https://developer.apple.com/documentation/vision/barcodereadertool",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
         }
       ],
-      last_verified_at: "2026-08-30"
+      last_verified_at: "2026-09-30",
+      release_notes: [
+        {
+          title: "iOS and iPadOS 27 release notes",
+          url: "https://developer.apple.com/documentation/ios-ipados-release-notes/ios-ipados-27-release-notes",
+          source_type: "release_notes",
+          verified_at: "2026-09-30"
+        }
+      ]
     },
     {
       id: "mapkit",
@@ -2670,7 +3411,7 @@ var capabilities_default = {
         visionOS: "1.0",
         watchOS: "2.0"
       },
-      sdk_availability: "The native MapKit framework is stable at the listed minimums; map styles, controls, services, and members have independent availability. Local interfaces were verified with Xcode 26.6 and SDK 26.5; Xcode 27 was not locally installed.",
+      sdk_availability: "The native MapKit framework is stable at the listed minimums; map styles, controls, services, and members have independent availability. Availability re-checked against Apple documentation and the iOS 27 release notes on 2026-09-30 (Xcode 27 / iOS 27 SDK); no new MapKit framework API was found for iOS 27.0, and documentation lists one 27.2 deprecation (see limitations; the 27.2 SDK is beta). Earlier local interface verification used Xcode 26.6 and SDK 26.5; Xcode 27 was not locally installed.",
       stable_or_beta: "stable",
       on_device_level: "hybrid",
       network_requirement: "Map content, local search, directions, and other Apple Maps services normally require network connectivity; locally supplied overlays and annotations do not.",
@@ -2726,7 +3467,8 @@ var capabilities_default = {
         "The framework does not guarantee offline availability of map tiles or Apple Maps service results",
         "Ordinary native MapKit use has no framework-wide capability, entitlement, location permission, or background mode",
         "The deprecated com.apple.developer.maps entitlement is not recommended",
-        "Server API, MapKit JS, routing-app, and region-limited default-navigation configuration have separate contracts"
+        "Server API, MapKit JS, routing-app, and region-limited default-navigation configuration have separate contracts",
+        "MKMapSnapshotter.Options.mapType is deprecated with a 27.2 SDK (beta) availability marker in current documentation; use preferredConfiguration (iOS 17)"
       ],
       keywords: ["mapkit", "map", "mkmapview", "directions", "local search", "annotation", "overlay"],
       official_documentation: [
@@ -2734,34 +3476,48 @@ var capabilities_default = {
           title: "MapKit",
           url: "https://developer.apple.com/documentation/mapkit",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "showsUserLocation",
           url: "https://developer.apple.com/documentation/mapkit/mkmapview/showsuserlocation",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "Configuring Maps support",
           url: "https://developer.apple.com/documentation/xcode/configuring-maps-support",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "Preparing your app to be the default navigation app",
           url: "https://developer.apple.com/documentation/mapkit/preparing-your-app-to-be-the-default-navigation-app",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "Providing directions",
           url: "https://developer.apple.com/library/archive/documentation/UserExperience/Conceptual/LocationAwarenessPG/ProvidingDirections/ProvidingDirections.html#//apple_ref/doc/uid/TP40009497-CH8-SW8",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "MKMapSnapshotter.Options preferredConfiguration",
+          url: "https://developer.apple.com/documentation/mapkit/mkmapsnapshotter/options/preferredconfiguration",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
         }
       ],
-      last_verified_at: "2026-08-30"
+      last_verified_at: "2026-09-30",
+      release_notes: [
+        {
+          title: "iOS and iPadOS 27 release notes",
+          url: "https://developer.apple.com/documentation/ios-ipados-release-notes/ios-ipados-27-release-notes",
+          source_type: "release_notes",
+          verified_at: "2026-09-30"
+        }
+      ]
     },
     {
       id: "core-bluetooth",
@@ -2793,10 +3549,11 @@ var capabilities_default = {
         visionOS: "1.0",
         watchOS: "4.0"
       },
-      sdk_availability: "The profile baseline follows CBCentralManager: iOS 5, macOS 10.7, and Mac Catalyst 13.1; the framework collection and individual members have separate availability. CBPeripheralManager begins at iOS 6 and macOS 10.9 and is unavailable on tvOS, watchOS, and visionOS in the locally verified SDK. Local interfaces were verified with Xcode 26.6 and SDK 26.5; Xcode 27 was not locally installed.",
+      sdk_availability: "The profile baseline follows CBCentralManager: iOS 5, macOS 10.7, and Mac Catalyst 13.1; the framework collection and individual members have separate availability. CBPeripheralManager begins at iOS 6 and macOS 10.9 and is unavailable on tvOS, watchOS, and visionOS in the locally verified SDK. Channel Sounding (CBChannelSoundingSessionConfiguration, CBChannelSoundingProcedureResults, CBPeripheral.startChannelSoundingSession(_:)) begins at iOS, iPadOS, and Mac Catalyst 27.0 per current documentation (reviewed 2026-09-30); no macOS or visionOS Channel Sounding availability is documented. Earlier local interface verification used Xcode 26.6 and SDK 26.5; Xcode 27 was not locally installed.",
       stable_or_beta: "stable",
       hardware_requirements: [
-        "Compatible Bluetooth Low Energy hardware and a platform-supported central or peripheral role"
+        "Compatible Bluetooth Low Energy hardware and a platform-supported central or peripheral role",
+        "Channel Sounding (iOS 27.0) needs initiator hardware that supports it, iPhone 17 or later per Apple's sample, and a responder peripheral that supports Bluetooth 6.3 and Channel Sounding; it is unavailable in Simulator"
       ],
       on_device_level: "fully_on_device",
       network_requirement: "Core Bluetooth communicates over the local Bluetooth radio and requires no Internet or cloud service.",
@@ -2827,42 +3584,81 @@ var capabilities_default = {
       implementation_notes: [
         "Check manager authorization and state before scanning, advertising, or connecting",
         "Choose only the background role required and implement state restoration where appropriate",
-        "Design for disconnects, duplicate discoveries, radio changes, and system scheduling"
+        "Design for disconnects, duplicate discoveries, radio changes, and system scheduling",
+        "Channel Sounding sessions are restricted by the system to peripherals paired through AccessorySetupKit; starting a session with any other peripheral is denied",
+        "Create the CBCentralManager only after AccessorySetupKit pairing completes, because initializing it earlier triggers the Bluetooth permission prompt and prevents the AccessorySetupKit picker from appearing",
+        "Call supports(_:) only after the central manager reaches poweredOn; earlier calls return incorrect results",
+        "Start a session with CBPeripheral.startChannelSoundingSession(_:) using CBChannelSoundingSessionConfiguration(role:); results arrive in CBPeripheralDelegate and CBChannelSoundingProcedureResults.distance returns a negative sentinel when no valid measurement is available",
+        "Nearby Interaction offers a second Channel Sounding path that can add a horizontal angle when camera assistance is available; Core Bluetooth's path delivers distance only"
       ],
       limitations: [
         "Background scanning and advertising behavior is constrained and can differ from foreground behavior",
         "Bluetooth background modes are not supported for iPad apps running on macOS",
         "Peripheral-role APIs are unavailable on tvOS, watchOS, and visionOS in the locally verified SDK",
-        "Simulator and device hardware do not provide equivalent Bluetooth validation"
+        "Simulator and device hardware do not provide equivalent Bluetooth validation",
+        "Channel Sounding is an iOS, iPadOS, and Mac Catalyst 27.0 feature and needs both capable hardware and a Bluetooth 6.3 Channel Sounding peripheral",
+        "Channel Sounding requires AccessorySetupKit pairing; general CBCentralManager-discovered peripherals cannot be ranged"
       ],
-      keywords: ["core bluetooth", "corebluetooth", "ble", "central", "peripheral", "bluetooth accessory"],
+      keywords: [
+        "core bluetooth",
+        "corebluetooth",
+        "ble",
+        "central",
+        "peripheral",
+        "bluetooth accessory",
+        "channel sounding",
+        "bluetooth 6.3",
+        "ranging",
+        "distance"
+      ],
       official_documentation: [
         {
           title: "Core Bluetooth",
           url: "https://developer.apple.com/documentation/corebluetooth",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "NSBluetoothAlwaysUsageDescription",
           url: "https://developer.apple.com/documentation/bundleresources/information-property-list/nsbluetoothalwaysusagedescription",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "UIBackgroundModes",
           url: "https://developer.apple.com/documentation/bundleresources/information-property-list/uibackgroundmodes",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "CBPeripheralManager",
           url: "https://developer.apple.com/documentation/corebluetooth/cbperipheralmanager",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "Measuring distance between devices using Channel Sounding",
+          url: "https://developer.apple.com/documentation/corebluetooth/measuring-distance-between-devices-using-channel-sounding",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "CBChannelSoundingSessionConfiguration",
+          url: "https://developer.apple.com/documentation/corebluetooth/cbchannelsoundingsessionconfiguration",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
         }
       ],
-      last_verified_at: "2026-08-30"
+      last_verified_at: "2026-09-30",
+      related_frameworks: ["AccessorySetupKit", "Nearby Interaction"],
+      release_notes: [
+        {
+          title: "iOS and iPadOS 27 release notes",
+          url: "https://developer.apple.com/documentation/ios-ipados-release-notes/ios-ipados-27-release-notes",
+          source_type: "release_notes",
+          verified_at: "2026-09-30"
+        }
+      ]
     },
     {
       id: "core-motion",
@@ -2893,7 +3689,7 @@ var capabilities_default = {
         visionOS: "1.0",
         watchOS: "2.0"
       },
-      sdk_availability: "The Core Motion framework collection is available at the listed platform minimums, but services and members have independent availability. CMMotionManager is unavailable on macOS, magnetometer and several activity APIs are unavailable on visionOS, and macOS support is limited to specific members such as later headphone-motion APIs. Local headers were verified with Xcode 26.6 and SDK 26.5; Xcode 27 was not locally installed.",
+      sdk_availability: "The Core Motion framework collection is available at the listed platform minimums, but services and members have independent availability. CMMotionManager is unavailable on macOS, magnetometer and several activity APIs are unavailable on visionOS, and macOS support is limited to specific members such as later headphone-motion APIs. Local headers were verified with Xcode 26.6 and SDK 26.5; Xcode 27 SDK headers were not re-checked locally; iOS 27 additions were verified against Apple documentation and the iOS 27 release notes on 2026-09-30.",
       stable_or_beta: "stable",
       supported_devices: ["Devices for which the concrete Core Motion service reports availability at runtime"],
       hardware_requirements: [
@@ -2966,52 +3762,52 @@ var capabilities_default = {
           title: "Core Motion",
           url: "https://developer.apple.com/documentation/coremotion",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-31"
+          verified_at: "2026-09-30"
         },
         {
           title: "CMMotionManager",
           url: "https://developer.apple.com/documentation/coremotion/cmmotionmanager",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-31"
+          verified_at: "2026-09-30"
         },
         {
           title: "CMPedometer",
           url: "https://developer.apple.com/documentation/coremotion/cmpedometer",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-31"
+          verified_at: "2026-09-30"
         },
         {
           title: "Device sensors",
           url: "https://developer.apple.com/documentation/technologyoverviews/device-sensors",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-31"
+          verified_at: "2026-09-30"
         },
         {
           title: "NSMotionUsageDescription",
           url: "https://developer.apple.com/documentation/bundleresources/information-property-list/nsmotionusagedescription",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-31"
+          verified_at: "2026-09-30"
         },
         {
           title: "NSFallDetectionUsageDescription",
           url: "https://developer.apple.com/documentation/bundleresources/information-property-list/nsfalldetectionusagedescription",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-31"
+          verified_at: "2026-09-30"
         },
         {
           title: "CMFallDetectionManager",
           url: "https://developer.apple.com/documentation/coremotion/cmfalldetectionmanager",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-31"
+          verified_at: "2026-09-30"
         },
         {
           title: "Fall Detection Notifications entitlement",
           url: "https://developer.apple.com/documentation/bundleresources/entitlements/com.apple.developer.health.fall-detection",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-31"
+          verified_at: "2026-09-30"
         }
       ],
-      last_verified_at: "2026-08-31"
+      last_verified_at: "2026-09-30"
     },
     {
       id: "weatherkit",
@@ -3045,7 +3841,7 @@ var capabilities_default = {
         visionOS: "1.0",
         watchOS: "9.0"
       },
-      sdk_availability: "WeatherService and the original WeatherKit datasets are stable at the listed minimums; newer statistics, attribution fields, and dataset members have independent availability. The native framework is included in Xcode 14 or later. Local Swift interfaces were verified with Xcode 26.6 and SDK 26.5; Xcode 27 was not locally installed.",
+      sdk_availability: "WeatherService and the original WeatherKit datasets are stable at the listed minimums; newer statistics, attribution fields, and dataset members have independent availability. The native framework is included in Xcode 14 or later. Availability re-checked against Apple documentation and the iOS 27 release notes on 2026-09-30 (Xcode 27 / iOS 27 SDK) with no new iOS 27 changes found; earlier local interface verification used Xcode 26.6 and SDK 26.5, and Xcode 27 was not locally installed.",
       stable_or_beta: "stable",
       on_device_level: "cloud_required",
       network_requirement: "Weather requests require connectivity to Apple's Weather service; cached application presentation must still respect freshness and attribution requirements.",
@@ -3104,40 +3900,48 @@ var capabilities_default = {
           title: "WeatherKit",
           url: "https://developer.apple.com/documentation/weatherkit",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-31"
+          verified_at: "2026-09-30"
         },
         {
           title: "Get started with WeatherKit",
           url: "https://developer.apple.com/weatherkit/",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-31"
+          verified_at: "2026-09-30"
         },
         {
           title: "WeatherService",
           url: "https://developer.apple.com/documentation/weatherkit/weatherservice",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-31"
+          verified_at: "2026-09-30"
         },
         {
           title: "WeatherAttribution",
           url: "https://developer.apple.com/documentation/weatherkit/weatherattribution",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-31"
+          verified_at: "2026-09-30"
         },
         {
           title: "WeatherKit entitlement",
           url: "https://developer.apple.com/documentation/bundleresources/entitlements/com.apple.developer.weatherkit",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-31"
+          verified_at: "2026-09-30"
         },
         {
           title: "WeatherKit REST API",
           url: "https://developer.apple.com/documentation/weatherkitrestapi",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-31"
+          verified_at: "2026-09-30"
         }
       ],
-      last_verified_at: "2026-08-31"
+      last_verified_at: "2026-09-30",
+      release_notes: [
+        {
+          title: "iOS and iPadOS 27 release notes",
+          url: "https://developer.apple.com/documentation/ios-ipados-release-notes/ios-ipados-27-release-notes",
+          source_type: "release_notes",
+          verified_at: "2026-09-30"
+        }
+      ]
     },
     {
       id: "local-authentication",
@@ -3231,28 +4035,29 @@ var capabilities_default = {
           title: "LocalAuthentication",
           url: "https://developer.apple.com/documentation/localauthentication",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-31"
+          verified_at: "2026-09-30"
         },
         {
           title: "LAContext",
           url: "https://developer.apple.com/documentation/localauthentication/lacontext",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-31"
+          verified_at: "2026-09-30"
         },
         {
           title: "Logging a user into your app with Face ID or Touch ID",
           url: "https://developer.apple.com/documentation/localauthentication/logging-a-user-into-your-app-with-face-id-or-touch-id",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-31"
+          verified_at: "2026-09-30"
         },
         {
           title: "NSFaceIDUsageDescription",
           url: "https://developer.apple.com/documentation/bundleresources/information-property-list/nsfaceidusagedescription",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-31"
+          verified_at: "2026-09-30"
         }
       ],
-      last_verified_at: "2026-08-31"
+      last_verified_at: "2026-09-30",
+      release_notes: []
     },
     {
       id: "core-spotlight",
@@ -3265,7 +4070,8 @@ var capabilities_default = {
         "Index app-owned items with searchable metadata and deep-link identifiers",
         "Update or delete indexed items when the underlying app data changes",
         "Query the app's Spotlight index for in-app search",
-        "Provide an optional Spotlight indexing extension for supported system-requested reindexing"
+        "Provide an optional Spotlight indexing extension for supported system-requested reindexing",
+        "Expose the app's Spotlight index and files to Foundation Models through SpotlightSearchTool on iOS 27 and later"
       ],
       unsupported_use_cases: [
         "Reading arbitrary private content or another app's index",
@@ -3273,7 +4079,7 @@ var capabilities_default = {
         "Treating system ranking or result presentation as app-controlled",
         "Using an iOS Spotlight File Import extension as a macOS Spotlight importer plugin"
       ],
-      related_frameworks: ["Foundation", "Uniform Type Identifiers"],
+      related_frameworks: ["Foundation", "Uniform Type Identifiers", "Foundation Models"],
       related_extensions: ["Spotlight Index Extension"],
       platforms: ["iOS", "iPadOS", "Mac Catalyst", "macOS", "visionOS"],
       minimum_os_version: {
@@ -3283,7 +4089,7 @@ var capabilities_default = {
         macOS: "10.11",
         visionOS: "1.0"
       },
-      sdk_availability: "The profile baseline follows CSSearchableIndex at iOS 9, Mac Catalyst 13.1, and macOS 10.11; visionOS uses its platform baseline. Semantic search, Apple Intelligence summaries, expected-state batching, import extensions, and other members begin later and have separate platform support. tvOS and watchOS have no usable profile baseline. Local headers were verified with Xcode 26.6 and SDK 26.5, including the CSBase availability macro expansion; Xcode 27 was not locally installed.",
+      sdk_availability: "The profile baseline follows CSSearchableIndex at iOS 9, Mac Catalyst 13.1, and macOS 10.11; visionOS uses its platform baseline. Semantic search, Apple Intelligence summaries, expected-state batching, import extensions, and other members begin later and have separate platform support. tvOS and watchOS have no usable profile baseline. Local headers were verified with Xcode 26.6 and SDK 26.5, including the CSBase availability macro expansion; Xcode 27 SDK headers were not re-checked locally; iOS 27 additions were verified against Apple documentation and the iOS 27 release notes on 2026-09-30.",
       stable_or_beta: "stable",
       on_device_level: "fully_on_device",
       network_requirement: "Ordinary Core Spotlight indexing and queries require no network; deep-linked app content may independently require connectivity.",
@@ -3311,13 +4117,17 @@ var capabilities_default = {
         "Check CSSearchableIndex.isIndexingAvailable before relying on indexing",
         "Use named indexes in production; Apple documents defaultSearchableIndex for prototyping and testing",
         "Assign stable unique and domain identifiers, maintain expiration dates, and delete stale entries",
-        "Add an indexing extension only when supported system-requested reindexing is required"
+        "Add an indexing extension only when supported system-requested reindexing is required",
+        "SpotlightSearchTool with the default configuration exceeds the on-device system model's context window and fails with a token-limit error; configure it with .focused(.communications), .focused(.calendar), .focused(.documents), .focused(.visualMedia), or .focused(.audio) for on-device sessions",
+        "Reserve the default SpotlightSearchTool configuration for large-context models such as PrivateCloudComputeLanguageModel"
       ],
       limitations: [
         "Indexes remain on device, are private to that device owner, and don't synchronize to the person's other devices",
         "Index quotas, device support, ranking, and system presentation aren't controlled by the app",
         "Spotlight File Import extensions don't provide macOS file-import functionality",
-        "Later semantic search and Apple Intelligence features have additional OS, device, language, and availability constraints"
+        "Later semantic search and Apple Intelligence features have additional OS, device, language, and availability constraints",
+        "SpotlightSearchTool and CSSearchableIndexDescription require iOS 27.0 or later and are not listed for tvOS or watchOS",
+        "Known issue in iOS 27 release notes: a default SpotlightSearchTool used with an on-device LanguageModelSession fails on token count"
       ],
       recommended_alternatives: [
         "NSUserActivity for eligible user activities and handoff-oriented discoverability",
@@ -3337,22 +4147,42 @@ var capabilities_default = {
           title: "Core Spotlight",
           url: "https://developer.apple.com/documentation/corespotlight",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-31"
+          verified_at: "2026-09-30"
         },
         {
           title: "Adding your app's content to Spotlight indexes",
           url: "https://developer.apple.com/documentation/corespotlight/adding-your-app-s-content-to-spotlight-indexes",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-31"
+          verified_at: "2026-09-30"
         },
         {
           title: "Searching for information in your app",
           url: "https://developer.apple.com/documentation/corespotlight/searching-for-information-in-your-app",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-31"
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "SpotlightSearchTool",
+          url: "https://developer.apple.com/documentation/corespotlight/spotlightsearchtool",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "Core Spotlight updates",
+          url: "https://developer.apple.com/documentation/updates/corespotlight",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
         }
       ],
-      last_verified_at: "2026-08-31"
+      last_verified_at: "2026-09-30",
+      release_notes: [
+        {
+          title: "iOS and iPadOS 27 release notes",
+          url: "https://developer.apple.com/documentation/ios-ipados-release-notes/ios-ipados-27-release-notes",
+          source_type: "release_notes",
+          verified_at: "2026-09-30"
+        }
+      ]
     },
     {
       id: "network",
@@ -3390,7 +4220,7 @@ var capabilities_default = {
         visionOS: "1.0",
         watchOS: "5.0"
       },
-      sdk_availability: "The profile baseline follows NWConnection and NWListener: iOS, iPadOS, and tvOS 12, macOS 10.14, watchOS 5, with Mac Catalyst and visionOS supported by their platform baselines. WebSocket protocol metadata, connection groups, QUIC, privacy contexts, and newer protocol options begin later. Local headers were verified with Xcode 26.6 and SDK 26.5; Xcode 27 was not locally installed.",
+      sdk_availability: "The profile baseline follows NWConnection and NWListener: iOS, iPadOS, and tvOS 12, macOS 10.14, watchOS 5, with Mac Catalyst and visionOS supported by their platform baselines. WebSocket protocol metadata, connection groups, QUIC, privacy contexts, and newer protocol options begin later. Local headers were verified with Xcode 26.6 and SDK 26.5; Xcode 27 was not locally installed. iOS 27.0 adds the DTLS protocol options, NetworkConnection and NetworkChannel path, viability, and better-path update handlers, and nw_tcp_set_max_pacing_rate (stable at 27.0; iOS 27.0 is released).",
       stable_or_beta: "stable",
       on_device_level: "hybrid",
       network_requirement: "Network framework operates over available local or remote network paths; the destination and protocol determine whether Internet or local-network connectivity is required.",
@@ -3434,13 +4264,17 @@ var capabilities_default = {
         "Drive application behavior from NWConnection or NWListener state changes and cancel resources deterministically",
         "Use exact Bonjour service types in NSBonjourServices and handle denied or not-yet-decided local-network access on platforms where Local Network privacy applies",
         "Use waits-for-connectivity behavior where appropriate instead of treating the first local-network denial as final",
-        "Keep URLSession background transfer and NetworkExtension provider architecture separate from this profile"
+        "Keep URLSession background transfer and NetworkExtension provider architecture separate from this profile",
+        "27.0 adds a DTLS protocol definition (version, cipher suites, peer authentication, tickets, early data, local identity) for encrypted datagrams",
+        "iOS 27 stricter TLS 1.2-minimum enforcement applies to select system processes (MDM, DDM, Automated Device Enrollment, configuration profile and app installation, software updates) and servers they contact; it is not stated as a change to app Network framework TLS defaults",
+        "NSRequiresNIAPTLSPackageVersion (26.4 and later) opts an app into the stricter NIAP FCP_v2.1 TLS mode through ATS"
       ],
       limitations: [
         "Ordinary Network framework use grants no general background execution time",
         "Local Network privacy applies to iOS and iPadOS 14 or later, macOS 15 or later, and visionOS 1 or later; it doesn't apply to tvOS or watchOS, while Bonjour declarations and multicast approval have their own conditions",
         "Network framework connection groups support UDP multicast but not UDP broadcast",
-        "NetworkExtension, Universal Links, and background URLSession aren't aliases of Network framework"
+        "NetworkExtension, Universal Links, and background URLSession aren't aliases of Network framework",
+        "The iOS 27 Network Security release note concerns system-process TLS requirements (TLS 1.2 minimum, ATS-conformant cipher suites and certificates); servers that fail them can break MDM or enrollment flows even when app traffic works"
       ],
       recommended_alternatives: [
         "URLSession for HTTP semantics and supported background uploads or downloads",
@@ -3463,46 +4297,72 @@ var capabilities_default = {
           title: "Network",
           url: "https://developer.apple.com/documentation/network",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-31"
+          verified_at: "2026-09-30"
         },
         {
           title: "NWConnection",
           url: "https://developer.apple.com/documentation/network/nwconnection",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-31"
+          verified_at: "2026-09-30"
         },
         {
           title: "TN3151: Choosing the right networking API",
           url: "https://developer.apple.com/documentation/technotes/tn3151-choosing-the-right-networking-api",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-31"
+          verified_at: "2026-09-30"
         },
         {
           title: "TN3179: Understanding local network privacy",
           url: "https://developer.apple.com/documentation/technotes/tn3179-understanding-local-network-privacy",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-31"
+          verified_at: "2026-09-30"
         },
         {
           title: "NSLocalNetworkUsageDescription",
           url: "https://developer.apple.com/documentation/bundleresources/information-property-list/nslocalnetworkusagedescription",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-31"
+          verified_at: "2026-09-30"
         },
         {
           title: "Multicast networking entitlement",
           url: "https://developer.apple.com/documentation/bundleresources/entitlements/com.apple.developer.networking.multicast",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-31"
+          verified_at: "2026-09-30"
         },
         {
           title: "Configuring the macOS App Sandbox",
           url: "https://developer.apple.com/documentation/xcode/configuring-the-macos-app-sandbox",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-31"
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "DTLS",
+          url: "https://developer.apple.com/documentation/network/dtls",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "NSRequiresNIAPTLSPackageVersion",
+          url: "https://developer.apple.com/documentation/bundleresources/information-property-list/nsrequiresniaptlspackageversion",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "Preventing insecure network connections",
+          url: "https://developer.apple.com/documentation/security/preventing-insecure-network-connections",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
         }
       ],
-      last_verified_at: "2026-08-31"
+      last_verified_at: "2026-09-30",
+      release_notes: [
+        {
+          title: "iOS and iPadOS 27 release notes",
+          url: "https://developer.apple.com/documentation/ios-ipados-release-notes/ios-ipados-27-release-notes",
+          source_type: "release_notes",
+          verified_at: "2026-09-30"
+        }
+      ]
     },
     {
       id: "webkit",
@@ -3603,46 +4463,47 @@ var capabilities_default = {
           title: "WebKit",
           url: "https://developer.apple.com/documentation/webkit",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-31"
+          verified_at: "2026-09-30"
         },
         {
           title: "WKWebView",
           url: "https://developer.apple.com/documentation/webkit/wkwebview",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-31"
+          verified_at: "2026-09-30"
         },
         {
           title: "WKNavigationDelegate",
           url: "https://developer.apple.com/documentation/webkit/wknavigationdelegate",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-31"
+          verified_at: "2026-09-30"
         },
         {
           title: "WKScriptMessageHandler",
           url: "https://developer.apple.com/documentation/webkit/wkscriptmessagehandler",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-31"
+          verified_at: "2026-09-30"
         },
         {
           title: "Requesting media-capture permission",
           url: "https://developer.apple.com/documentation/webkit/wkuidelegate/webview(_:requestmediacapturepermissionfor:initiatedbyframe:type:decisionhandler:)",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-31"
+          verified_at: "2026-09-30"
         },
         {
           title: "Discover WKWebView enhancements",
           url: "https://developer.apple.com/videos/play/wwdc2020/10188/",
           source_type: "wwdc",
-          verified_at: "2026-08-31"
+          verified_at: "2026-09-30"
         },
         {
           title: "Preventing insecure network connections",
           url: "https://developer.apple.com/documentation/security/preventing-insecure-network-connections",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-31"
+          verified_at: "2026-09-30"
         }
       ],
-      last_verified_at: "2026-08-31"
+      last_verified_at: "2026-09-30",
+      release_notes: []
     },
     {
       id: "eventkit",
@@ -3675,7 +4536,7 @@ var capabilities_default = {
         visionOS: "1.0",
         watchOS: "2.0"
       },
-      sdk_availability: "The profile baseline follows EKEventStore at the listed minimums. Granular requestFullAccessToEvents, requestWriteOnlyAccessToEvents, and requestFullAccessToReminders APIs begin at iOS and iPadOS 17, Mac Catalyst 17, macOS 14, visionOS 1, and watchOS 10; legacy requestAccess is deprecated on those modern baselines. Event, reminder, save, and UI members have separate availability. Local headers were verified with Xcode 26.6 and SDK 26.5; Xcode 27 was not locally installed.",
+      sdk_availability: "The profile baseline follows EKEventStore at the listed minimums. Granular requestFullAccessToEvents, requestWriteOnlyAccessToEvents, and requestFullAccessToReminders APIs begin at iOS and iPadOS 17, Mac Catalyst 17, macOS 14, visionOS 1, and watchOS 10; legacy requestAccess is deprecated on those modern baselines. Event, reminder, save, and UI members have separate availability. Availability re-checked against Apple documentation and the iOS 27 release notes on 2026-09-30 (Xcode 27 / iOS 27 SDK) with no new iOS 27 changes found; earlier local header verification used Xcode 26.6 and SDK 26.5, and Xcode 27 was not locally installed.",
       stable_or_beta: "stable",
       on_device_level: "primarily_on_device",
       network_requirement: "EventKit accesses the local event store; system-configured calendar or reminders accounts may synchronize independently over the network.",
@@ -3743,40 +4604,48 @@ var capabilities_default = {
           title: "EventKit",
           url: "https://developer.apple.com/documentation/eventkit",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-31"
+          verified_at: "2026-09-30"
         },
         {
           title: "EKEventStore",
           url: "https://developer.apple.com/documentation/eventkit/ekeventstore",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-31"
+          verified_at: "2026-09-30"
         },
         {
           title: "Accessing the event store",
           url: "https://developer.apple.com/documentation/eventkit/accessing-the-event-store",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-31"
+          verified_at: "2026-09-30"
         },
         {
           title: "Accessing Calendar using EventKit and EventKitUI",
           url: "https://developer.apple.com/documentation/eventkit/accessing-calendar-using-eventkit-and-eventkitui",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-31"
+          verified_at: "2026-09-30"
         },
         {
           title: "Calendars entitlement",
           url: "https://developer.apple.com/documentation/bundleresources/entitlements/com.apple.security.personal-information.calendars",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-31"
+          verified_at: "2026-09-30"
         },
         {
           title: "TN3152: Migrating to the latest Calendar access levels",
           url: "https://developer.apple.com/documentation/technotes/tn3152-migrating-to-the-latest-calendar-access-levels",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-31"
+          verified_at: "2026-09-30"
         }
       ],
-      last_verified_at: "2026-08-31"
+      last_verified_at: "2026-09-30",
+      release_notes: [
+        {
+          title: "iOS and iPadOS 27 release notes",
+          url: "https://developer.apple.com/documentation/ios-ipados-release-notes/ios-ipados-27-release-notes",
+          source_type: "release_notes",
+          verified_at: "2026-09-30"
+        }
+      ]
     },
     {
       id: "contacts",
@@ -3812,7 +4681,7 @@ var capabilities_default = {
         visionOS: "1.0",
         watchOS: "2.0"
       },
-      sdk_availability: "The profile baseline follows CNContactStore at the listed minimums. Limited authorization and ContactAccessButton or contactAccessPicker workflows begin at iOS 18; change history begins later, save operations are unavailable on watchOS, and ContactsUI has its own platform and member availability. Local headers were verified with Xcode 26.6 and SDK 26.5; Xcode 27 was not locally installed.",
+      sdk_availability: "The profile baseline follows CNContactStore at the listed minimums. Limited authorization and ContactAccessButton or contactAccessPicker workflows begin at iOS 18; change history begins later, save operations are unavailable on watchOS, and ContactsUI has its own platform and member availability. Availability re-checked against Apple documentation and the iOS 27 release notes on 2026-09-30 (Xcode 27 / iOS 27 SDK) with no new iOS 27 changes found; earlier local header verification used Xcode 26.6 and SDK 26.5, and Xcode 27 was not locally installed.",
       stable_or_beta: "stable",
       on_device_level: "primarily_on_device",
       network_requirement: "Contacts accesses the local contact store; system-configured contact accounts may synchronize independently over the network.",
@@ -3879,46 +4748,54 @@ var capabilities_default = {
           title: "Contacts",
           url: "https://developer.apple.com/documentation/contacts",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-31"
+          verified_at: "2026-09-30"
         },
         {
           title: "CNContactStore",
           url: "https://developer.apple.com/documentation/contacts/cncontactstore",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-31"
+          verified_at: "2026-09-30"
         },
         {
           title: "Accessing the contact store",
           url: "https://developer.apple.com/documentation/contacts/accessing-the-contact-store",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-31"
+          verified_at: "2026-09-30"
         },
         {
           title: "CNAuthorizationStatus limited",
           url: "https://developer.apple.com/documentation/contacts/cnauthorizationstatus/limited",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-31"
+          verified_at: "2026-09-30"
         },
         {
           title: "NSContactsUsageDescription",
           url: "https://developer.apple.com/documentation/bundleresources/information-property-list/nscontactsusagedescription",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-31"
+          verified_at: "2026-09-30"
         },
         {
           title: "Contacts notes entitlement",
           url: "https://developer.apple.com/documentation/bundleresources/entitlements/com.apple.developer.contacts.notes",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-31"
+          verified_at: "2026-09-30"
         },
         {
           title: "Address book entitlement",
           url: "https://developer.apple.com/documentation/bundleresources/entitlements/com.apple.security.personal-information.addressbook",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-31"
+          verified_at: "2026-09-30"
         }
       ],
-      last_verified_at: "2026-08-31"
+      last_verified_at: "2026-09-30",
+      release_notes: [
+        {
+          title: "iOS and iPadOS 27 release notes",
+          url: "https://developer.apple.com/documentation/ios-ipados-release-notes/ios-ipados-27-release-notes",
+          source_type: "release_notes",
+          verified_at: "2026-09-30"
+        }
+      ]
     },
     {
       id: "uiwebview",
@@ -3930,7 +4807,9 @@ var capabilities_default = {
       supported_use_cases: ["Migration analysis for legacy code"],
       unsupported_use_cases: ["New implementation"],
       platforms: ["iOS"],
-      minimum_os_version: { iOS: "2.0" },
+      minimum_os_version: {
+        iOS: "2.0"
+      },
       sdk_availability: "Deprecated since iOS 12.0; retained only for migration analysis.",
       stable_or_beta: "deprecated",
       deprecated_status: "Deprecated; Apple directs apps to use WKWebView or a purpose-specific system browser/authentication API.",
@@ -3947,16 +4826,2214 @@ var capabilities_default = {
           title: "UIWebView",
           url: "https://developer.apple.com/documentation/uikit/uiwebview",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         },
         {
           title: "Replacing UIWebView in your app",
           url: "https://developer.apple.com/documentation/webkit/replacing-uiwebview-in-your-app",
           source_type: "apple_developer_documentation",
-          verified_at: "2026-08-30"
+          verified_at: "2026-09-30"
         }
       ],
-      last_verified_at: "2026-08-30"
+      last_verified_at: "2026-09-30",
+      release_notes: []
+    },
+    {
+      id: "core-ai",
+      name: "Core AI",
+      aliases: ["CoreAI", "AIModel", "AIModelCache", "InferenceFunction", ".aimodel"],
+      category: "ai_ml",
+      entity_type: "framework",
+      summary: "iOS 27 framework for building, specializing, caching and running on-device AI models (.aimodel) across CPU, GPU and Neural Engine.",
+      supported_use_cases: [
+        "Run converted neural-network models on device with InferenceFunction",
+        "Control model specialization and caching with SpecializationOptions and AIModelCache",
+        "Compile .aimodel files ahead of time to .aimodelc with coreai-build",
+        "Run supported language models through a Foundation Models LanguageModelSession",
+        "Compare candidate models with the Evaluations framework"
+      ],
+      unsupported_use_cases: [
+        "Non-neural model types such as decision trees or tabular feature engineering (use Core ML)",
+        "Deployment below iOS 27"
+      ],
+      related_frameworks: ["Core ML", "Foundation Models", "Evaluations", "Metal", "Vision"],
+      related_capabilities: ["core-ml", "foundation-models", "background-tasks"],
+      related_entitlements: ["com.apple.developer.background-tasks.continued-processing.inference"],
+      platforms: ["iOS", "iPadOS", "macOS", "tvOS", "visionOS", "watchOS"],
+      minimum_os_version: {
+        iOS: "27.0",
+        iPadOS: "27.0",
+        macOS: "27.0",
+        tvOS: "27.0",
+        visionOS: "27.0",
+        watchOS: "27.0"
+      },
+      sdk_availability: "Xcode 27 with the iOS 27 SDK. Building .aimodel files in Xcode requires the Metal Toolchain component, which is not installed by default.",
+      stable_or_beta: "stable",
+      on_device_level: "fully_on_device",
+      network_requirement: "Inference runs on device with no per-inference cost; network is needed only if the app downloads the .aimodel file.",
+      cloud_dependency: null,
+      entitlements: [
+        "com.apple.developer.background-tasks.continued-processing.inference only when Neural Engine work must run while the app is in the background"
+      ],
+      hardware_requirements: [
+        "Designed for Apple silicon; check ComputeUnitKind availableKinds because compute units differ by device"
+      ],
+      security_considerations: [
+        "Treat downloaded .aimodel files as untrusted input until integrity is checked",
+        "Cached specializations are tied to the device hardware and OS version"
+      ],
+      implementation_notes: [
+        "Load with AIModel(contentsOf:options:), then loadFunction(named:) for an InferenceFunction",
+        "Loading and specialization are asynchronous and can be slow for large models; check the default AIModelCache before re-specializing",
+        "Use .cpuOnly specialization for small background models to avoid competing with foreground GPU work",
+        "Convert PyTorch models with coreai-torch and optimize with coreai-optimization",
+        "Inspect models with the Core AI model viewer, debug gauge and instrument in Xcode"
+      ],
+      limitations: [
+        "Specialization can take significant time on first load",
+        "Some AIModel-level symbols list fewer platforms than the framework page; verify per-symbol availability before adopting on macOS",
+        "Language-model support through Foundation Models is a separate documented path"
+      ],
+      recommended_alternatives: [
+        "Core ML for non-neural model types",
+        "Foundation Models for the system language model"
+      ],
+      keywords: [
+        "core ai",
+        "coreai",
+        "aimodel",
+        "inference",
+        "neural engine",
+        "model specialization",
+        "coreai-torch",
+        "coreai-build",
+        "on-device model",
+        "ios 27"
+      ],
+      official_documentation: [
+        {
+          title: "Core AI",
+          url: "https://developer.apple.com/documentation/coreai",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "Integrating on-device AI models in your app with Core AI",
+          url: "https://developer.apple.com/documentation/coreai/integrating-on-device-ai-models-in-your-app-with-core-ai",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "Managing model specialization and caching",
+          url: "https://developer.apple.com/documentation/coreai/managing-model-specialization-and-caching",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "Compiling Core AI models ahead of time",
+          url: "https://developer.apple.com/documentation/coreai/compiling-core-ai-models-ahead-of-time",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "AIModelCache",
+          url: "https://developer.apple.com/documentation/coreai/aimodelcache",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "InferenceFunction",
+          url: "https://developer.apple.com/documentation/coreai/inferencefunction",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "Background Inference entitlement",
+          url: "https://developer.apple.com/documentation/bundleresources/entitlements/com.apple.developer.background-tasks.continued-processing.inference",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        }
+      ],
+      release_notes: [
+        {
+          title: "iOS & iPadOS 27 Release Notes",
+          url: "https://developer.apple.com/documentation/ios-ipados-release-notes/ios-ipados-27-release-notes",
+          source_type: "release_notes",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "Xcode 27 Release Notes",
+          url: "https://developer.apple.com/documentation/xcode-release-notes/xcode-27-release-notes",
+          source_type: "release_notes",
+          verified_at: "2026-09-30"
+        }
+      ],
+      last_verified_at: "2026-09-30"
+    },
+    {
+      id: "background-inference-entitlement",
+      name: "Background Inference",
+      aliases: [
+        "com.apple.developer.background-tasks.continued-processing.inference",
+        "Background Neural Engine access"
+      ],
+      category: "ai_ml",
+      entity_type: "entitlement",
+      summary: "iOS 27 entitlement required for any Neural Engine access while the app is in the background, including BGContinuedProcessingTask inference.",
+      supported_use_cases: [
+        "Finish critical Core AI, Core ML or Metal Performance Shaders Graph inference on the Neural Engine after the app moves to the background"
+      ],
+      unsupported_use_cases: ["Guaranteeing that background work is never terminated"],
+      related_frameworks: ["Core AI", "Core ML", "BackgroundTasks", "Metal Performance Shaders Graph"],
+      related_capabilities: ["core-ai", "core-ml", "background-tasks"],
+      platforms: ["iOS", "iPadOS", "macOS", "tvOS", "visionOS", "watchOS"],
+      minimum_os_version: {
+        iOS: "27.0",
+        iPadOS: "27.0",
+        macOS: "27.0",
+        tvOS: "27.0",
+        visionOS: "27.0",
+        watchOS: "27.0"
+      },
+      sdk_availability: "Entitlement documented as available from iOS 27.0 and the other listed 27.0 platforms; works with BGContinuedProcessingTask, which is available from iOS 26.0.",
+      stable_or_beta: "stable",
+      entitlements: ["com.apple.developer.background-tasks.continued-processing.inference"],
+      implementation_notes: [
+        "The system requires this entitlement for any background Neural Engine access, not only for continued background tasks",
+        "Pair with BGContinuedProcessingTask so long inference can finish after backgrounding"
+      ],
+      limitations: [
+        "Whether the entitlement needs Apple approval was not stated on the fetched page",
+        "The system can terminate continued processing tasks depending on run-time conditions"
+      ],
+      keywords: [
+        "background inference",
+        "neural engine",
+        "continued processing",
+        "bgcontinuedprocessingtask",
+        "core ai",
+        "entitlement"
+      ],
+      official_documentation: [
+        {
+          title: "Background Inference",
+          url: "https://developer.apple.com/documentation/bundleresources/entitlements/com.apple.developer.background-tasks.continued-processing.inference",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "BGContinuedProcessingTask",
+          url: "https://developer.apple.com/documentation/backgroundtasks/bgcontinuedprocessingtask",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "Core AI",
+          url: "https://developer.apple.com/documentation/coreai",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        }
+      ],
+      release_notes: [
+        {
+          title: "iOS & iPadOS 27 Release Notes",
+          url: "https://developer.apple.com/documentation/ios-ipados-release-notes/ios-ipados-27-release-notes",
+          source_type: "release_notes",
+          verified_at: "2026-09-30"
+        }
+      ],
+      last_verified_at: "2026-09-30"
+    },
+    {
+      id: "metrickit",
+      name: "MetricKit",
+      aliases: ["MetricManager", "MXMetricManager", "MetricReport", "DiagnosticReport"],
+      category: "testing_diagnostics",
+      entity_type: "framework",
+      summary: "On-device daily metric and diagnostic reports from real users; iOS 27 adds the Swift MetricManager API and no longer recommends the original MX* APIs.",
+      supported_use_cases: [
+        "Receive daily MetricReport and event-based DiagnosticReport values through async sequences",
+        "Attribute metrics to app states with the StateReporting framework",
+        "Collect launch, hang, hitch, CPU, memory, disk, network and termination data from production"
+      ],
+      unsupported_use_cases: [
+        "Real-time or per-user tracking",
+        "Advertising or cross-app user identification",
+        "Performance metrics on visionOS (diagnostics only)"
+      ],
+      related_frameworks: ["StateReporting", "OSLog", "Instruments"],
+      related_capabilities: ["privacy-manifest"],
+      platforms: ["iOS", "iPadOS", "macOS", "visionOS"],
+      minimum_os_version: {
+        iOS: "13.0",
+        iPadOS: "13.0",
+        macOS: "12.0",
+        visionOS: "1.0"
+      },
+      sdk_availability: "Original MX* APIs start at iOS 13 and macOS 12; the Swift MetricManager API with MetricReport and DiagnosticReport async sequences starts at iOS 27 and macOS 27, and visionOS 27 delivers diagnostic reports only.",
+      stable_or_beta: "stable",
+      deprecated_status: "MXMetricManager, MXMetricManagerSubscriber, MXMetricPayload and MXDiagnosticPayload are no longer recommended for new adoption as of iOS 27 (release notes); the MXMetricManager page lists deprecation at iOS 27.2 and macOS 27.2 (27.2 is beta).",
+      on_device_level: "primarily_on_device",
+      network_requirement: "Reports are generated on device; uploading them to a backend is the app's responsibility.",
+      cloud_dependency: null,
+      privacy_manifest_requirements: [
+        "Reports you upload can contain diagnostic and usage data; declare collection and audit privacy manifests accordingly"
+      ],
+      implementation_notes: [
+        "Create a MetricManager instance and hold it; do not create several instances over the same domains because concurrent iteration receives non-deterministic subsets",
+        "Metric reports cover the previous 24 hours at most once per day; diagnostic reports arrive immediately",
+        "Reports are Codable so they can be archived or uploaded",
+        "Pass StateReportingDomain values to init(enabledStateReportingDomains:) for state-segmented metrics",
+        "Recompile with the latest SDK: HitchTimeMetric.ratio moved to HitchTimeRatio and ScrollHitchTimeMetric was removed"
+      ],
+      limitations: [
+        "Metrics arrive daily, not on demand",
+        "MXMetricManager remains for older deployment targets but is no longer the recommended path"
+      ],
+      recommended_alternatives: ["MetricManager (Swift) for new code on iOS 27 and macOS 27"],
+      keywords: [
+        "metrickit",
+        "metricmanager",
+        "mxmetricmanager",
+        "diagnostics",
+        "hang",
+        "crash",
+        "hitch",
+        "launch time",
+        "performance",
+        "ios 27"
+      ],
+      official_documentation: [
+        {
+          title: "MetricKit",
+          url: "https://developer.apple.com/documentation/metrickit",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "Monitoring app performance with MetricKit",
+          url: "https://developer.apple.com/documentation/metrickit/monitoring-app-performance-with-metrickit",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "MetricManager",
+          url: "https://developer.apple.com/documentation/metrickit/metricmanager",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "MXMetricManager",
+          url: "https://developer.apple.com/documentation/metrickit/mxmetricmanager",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "StateReporting",
+          url: "https://developer.apple.com/documentation/statereporting",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        }
+      ],
+      release_notes: [
+        {
+          title: "iOS & iPadOS 27 Release Notes",
+          url: "https://developer.apple.com/documentation/ios-ipados-release-notes/ios-ipados-27-release-notes",
+          source_type: "release_notes",
+          verified_at: "2026-09-30"
+        }
+      ],
+      last_verified_at: "2026-09-30"
+    },
+    {
+      id: "background-assets",
+      name: "Background Assets",
+      aliases: [
+        "BackgroundAssets",
+        "Managed Background Assets",
+        "Apple-Hosted Background Assets",
+        "asset packs",
+        "BADownloadManager"
+      ],
+      category: "developer_delivery",
+      entity_type: "framework",
+      summary: "System-managed background downloading of app assets through asset packs, Apple-hosted or self-hosted; iOS 27 adds localized asset packs and replaces On Demand Resources.",
+      supported_use_cases: [
+        "Download essential, prefetch or on-demand asset packs with a system-managed downloader extension",
+        "Host up to 200GB of compressed assets on Apple servers via App Store Connect",
+        "Deliver language-specific asset packs based on the user's preferred languages (iOS 27)",
+        "Serve asset packs to a debugged device from Xcode"
+      ],
+      unsupported_use_cases: [
+        "Collecting or transmitting data to identify a user or device",
+        "Advertising or advertising measurement",
+        "Apple-hosted assets for watchOS apps"
+      ],
+      related_frameworks: ["StoreKit", "App Store Connect"],
+      related_capabilities: ["app-groups", "on-demand-resources", "background-tasks"],
+      related_extensions: ["Background Download extension (ManagedDownloaderExtension)"],
+      platforms: ["iOS", "iPadOS", "macOS", "tvOS", "visionOS"],
+      minimum_os_version: {
+        iOS: "16.0",
+        iPadOS: "16.0",
+        macOS: "13.0",
+        tvOS: "18.4",
+        visionOS: "2.4"
+      },
+      sdk_availability: "Framework starts at iOS 16 and macOS 13; localized asset packs require the iOS 27, macOS 27, tvOS 27 or visionOS 27 SDK and Xcode 27. Compatible iPhone and iPad apps get Background Assets in visionOS 1.0.",
+      stable_or_beta: "stable",
+      on_device_level: "hybrid",
+      network_requirement: "Assets are downloaded from Apple-hosted or self-hosted servers.",
+      cloud_dependency: "Apple-Hosted Background Assets uses App Store Connect hosting; self-hosted packs need your own server.",
+      xcode_capabilities: ["App Groups (shared by the app and its downloader extension)"],
+      info_plist_keys: [
+        "BAHasManagedAssetPacks",
+        "BAUsesAppleHosting",
+        "BAAppGroupID",
+        "BAManifestURL (unmanaged, self-hosted)",
+        "BAInitialDownloadRestrictions",
+        "BAEssentialMaxInstallSize",
+        "BAMaxInstallSize"
+      ],
+      app_review_considerations: [
+        "Use the framework only to download additional assets for the app; the documentation forbids using it for other purposes",
+        "Apple-hosted packs must be uploaded to App Store Connect before TestFlight or App Store distribution"
+      ],
+      implementation_notes: [
+        "Create packs with xcrun ba-package and a manifest specifying a download policy (essential, prefetch, on-demand)",
+        "Add a Background Download extension target and share an app group with the app",
+        "With Apple hosting, omit the other Background Assets Info.plist keys",
+        "Call AssetPackManager ensureLocalAvailability(of:) to guarantee availability; on-demand packs download on that call",
+        "Localized packs: set the manifest language key (ISO-639 with optional BCP-47 region or script; no variant subtags) and use resolvedLanguage",
+        "Test locally with the mock server in Xcode"
+      ],
+      limitations: [
+        "Localized asset packs are iOS 27 and later",
+        "Xcode 27 fixed ba-package producing an invalid archive with an on-demand policy; use the current tool"
+      ],
+      recommended_alternatives: [
+        "Background Assets replaces On Demand Resources (NSBundleResourceRequest), which is deprecated in iOS 27"
+      ],
+      keywords: [
+        "background assets",
+        "asset packs",
+        "on demand",
+        "ba-package",
+        "apple-hosted",
+        "downloader extension",
+        "localized asset packs",
+        "odr replacement"
+      ],
+      official_documentation: [
+        {
+          title: "Background Assets",
+          url: "https://developer.apple.com/documentation/backgroundassets",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "Creating managed asset packs",
+          url: "https://developer.apple.com/documentation/backgroundassets/creating-managed-asset-packs",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "Downloading Apple-hosted asset packs",
+          url: "https://developer.apple.com/documentation/backgroundassets/downloading-apple-hosted-asset-packs",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "Reducing download and storage demands with localized asset packs",
+          url: "https://developer.apple.com/documentation/backgroundassets/reducing-download-and-storage-demands-with-localized-asset-packs",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        }
+      ],
+      release_notes: [
+        {
+          title: "iOS & iPadOS 27 Release Notes",
+          url: "https://developer.apple.com/documentation/ios-ipados-release-notes/ios-ipados-27-release-notes",
+          source_type: "release_notes",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "Xcode 27 Release Notes",
+          url: "https://developer.apple.com/documentation/xcode-release-notes/xcode-27-release-notes",
+          source_type: "release_notes",
+          verified_at: "2026-09-30"
+        }
+      ],
+      last_verified_at: "2026-09-30"
+    },
+    {
+      id: "on-demand-resources",
+      name: "On Demand Resources",
+      aliases: ["ODR", "NSBundleResourceRequest"],
+      category: "developer_delivery",
+      entity_type: "deprecated_api",
+      summary: "Tag-based resource downloading API deprecated in iOS 27 in favor of Background Assets.",
+      supported_use_cases: ["Migration analysis for apps that still tag resources and use NSBundleResourceRequest"],
+      unsupported_use_cases: ["New implementation"],
+      related_frameworks: ["Foundation", "Background Assets"],
+      related_capabilities: ["background-assets"],
+      platforms: ["iOS", "iPadOS", "tvOS", "visionOS", "watchOS"],
+      minimum_os_version: {
+        iOS: "9.0",
+        iPadOS: "9.0",
+        tvOS: "9.0",
+        visionOS: "1.0",
+        watchOS: "2.0"
+      },
+      sdk_availability: "NSBundleResourceRequest is available from iOS 9 and marked deprecated at 27.0; Mac Catalyst calls are ignored.",
+      stable_or_beta: "deprecated",
+      deprecated_status: "On Demand Resources and the NSBundleResourceRequest API are deprecated in iOS 27 and the other 27.0 platforms; Apple directs apps to Background Assets.",
+      on_device_level: "hybrid",
+      network_requirement: "Tagged resources are downloaded when requested.",
+      recommended_alternatives: ["Background Assets managed asset packs (Apple-hosted or self-hosted)"],
+      implementation_notes: [
+        "Map ODR tags to asset packs with an essential, prefetch or on-demand download policy when migrating"
+      ],
+      limitations: ["Mac Catalyst apps ignore NSBundleResourceRequest calls"],
+      keywords: ["on demand resources", "odr", "nsbundleresourcerequest", "deprecated", "asset tags"],
+      official_documentation: [
+        {
+          title: "NSBundleResourceRequest",
+          url: "https://developer.apple.com/documentation/foundation/nsbundleresourcerequest",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "Background Assets",
+          url: "https://developer.apple.com/documentation/backgroundassets",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        }
+      ],
+      release_notes: [
+        {
+          title: "iOS & iPadOS 27 Release Notes",
+          url: "https://developer.apple.com/documentation/ios-ipados-release-notes/ios-ipados-27-release-notes",
+          source_type: "release_notes",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "Xcode 27 Release Notes",
+          url: "https://developer.apple.com/documentation/xcode-release-notes/xcode-27-release-notes",
+          source_type: "release_notes",
+          verified_at: "2026-09-30"
+        }
+      ],
+      last_verified_at: "2026-09-30"
+    },
+    {
+      id: "enhanced-security",
+      name: "Enhanced Security",
+      aliases: [
+        "Memory Integrity Enforcement",
+        "MIE",
+        "arm64e.x1",
+        "Hardware-Checked Pointer Arithmetic",
+        "hardened process",
+        "pointer authentication"
+      ],
+      category: "privacy_integrity",
+      entity_type: "system_capability",
+      summary: "Xcode capability enabling hardware memory tagging (MIE), pointer authentication, typed allocators and related hardening; arm64e.x1 adds pointer-arithmetic overflow checks on newer chips.",
+      supported_use_cases: [
+        "Detect use-after-free and out-of-bounds access with hardware memory tagging",
+        "Build for arm64e with pointer authentication",
+        "Enable typed allocators and stack zero-initialization",
+        "Adopt checked pointer-arithmetic overflow on arm64e.x1 devices",
+        "Ship Enhanced Security helper extensions"
+      ],
+      unsupported_use_cases: [
+        "Testing arm64e.x1 checks in the simulator",
+        "Guaranteeing no crashes in code that was not built and tested with these protections"
+      ],
+      related_frameworks: ["Xcode", "Swift"],
+      related_capabilities: ["swift", "uikit"],
+      platforms: ["iOS", "iPadOS", "macOS", "watchOS", "visionOS"],
+      minimum_os_version: {
+        iOS: null,
+        iPadOS: null,
+        macOS: null,
+        watchOS: null,
+        visionOS: null
+      },
+      sdk_availability: "Enhanced Security compiler settings and runtime checks are available for iOS, iPadOS, macOS, watchOS and visionOS apps and extensions, plus DriverKit extensions on iPadOS and macOS. arm64e.x1 and CPA2 are documented in the iOS 27 and Xcode 27 release notes.",
+      stable_or_beta: "stable",
+      on_device_level: "fully_on_device",
+      network_requirement: "No network required.",
+      cloud_dependency: null,
+      supported_devices: [
+        "Memory tagging: iPhone and iPad with A19 or later, Mac and Apple Vision Pro with M5 or later",
+        "arm64e.x1 and CPA2: iPhone with A20 Pro or later, Mac with M6 or later, Apple Watch with S11 or later"
+      ],
+      hardware_requirements: [
+        "Hardware memory tagging has no effect on devices without support",
+        "arm64e.x1 checks need specific hardware and cannot be tested in the simulator"
+      ],
+      xcode_capabilities: ["Enhanced Security"],
+      entitlements: [
+        "com.apple.security.hardened-process",
+        "com.apple.security.hardened-process.enhanced-security-version-string",
+        "com.apple.security.hardened-process.checked-allocations",
+        "com.apple.security.hardened-process.checked-allocations.soft-mode",
+        "com.apple.security.hardened-process.checked-allocations.enable-pure-data",
+        "com.apple.security.hardened-process.checked-allocations.no-tagged-receive",
+        "com.apple.security.hardened-process.checked-allocations.enforce-checked-pointer-arithmetic-overflow"
+      ],
+      security_considerations: [
+        "Memory tagging turns memory-safety bugs into crashes; start in soft mode (simulated crashes) and disable soft mode once stable",
+        "Adopt only when the protections match the app's threat model"
+      ],
+      implementation_notes: [
+        "Any com.apple.security.hardened-process.* entitlement needs com.apple.security.hardened-process and the enhanced-security-version-string entitlement; checked-allocations.* entitlements also need checked-allocations",
+        "Build settings involved: ENABLE_POINTER_AUTHENTICATION, CLANG_ENABLE_C_TYPED_ALLOCATOR_SUPPORT, CLANG_ENABLE_CPLUSPLUS_TYPED_ALLOCATOR_SUPPORT, CLANG_ENABLE_STACK_ZERO_INIT",
+        "Use __ptrauth for stored data and function pointers; re-sign pointers instead of overwriting them with raw values",
+        "Pointer-arithmetic overflow checking requires memory integrity enforcement first",
+        "Allocations instrument shows tagged allocations under MIE"
+      ],
+      limitations: [
+        "Xcode 27 known issue: apps with the Hardware-Checked Pointer Arithmetic slice cannot be uploaded to the App Store on macOS Tahoe 26.6 with automatic signing; use macOS 27 with Xcode 27 or manual signing",
+        "Performance and stability impact for code not designed with these checks"
+      ],
+      keywords: [
+        "enhanced security",
+        "memory integrity enforcement",
+        "mie",
+        "arm64e",
+        "arm64e.x1",
+        "pointer authentication",
+        "memory tagging",
+        "hardened process",
+        "cpa2"
+      ],
+      official_documentation: [
+        {
+          title: "Enabling enhanced security for your app",
+          url: "https://developer.apple.com/documentation/xcode/enabling-enhanced-security-for-your-app",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        }
+      ],
+      release_notes: [
+        {
+          title: "iOS & iPadOS 27 Release Notes",
+          url: "https://developer.apple.com/documentation/ios-ipados-release-notes/ios-ipados-27-release-notes",
+          source_type: "release_notes",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "Xcode 27 Release Notes",
+          url: "https://developer.apple.com/documentation/xcode-release-notes/xcode-27-release-notes",
+          source_type: "release_notes",
+          verified_at: "2026-09-30"
+        }
+      ],
+      last_verified_at: "2026-09-30"
+    },
+    {
+      id: "trustinsights",
+      name: "TrustInsights",
+      aliases: ["Trust Insights", "IsLikelyBeingCoachedInsight", "InsightEvaluator"],
+      category: "privacy_integrity",
+      entity_type: "framework",
+      summary: "iOS 27 framework that evaluates transactions for signs of coercion or coaching (social engineering) while preserving privacy.",
+      supported_use_cases: [
+        "Request an insight for payment, account, resource-use, communication or other operations",
+        "Decide whether to add friction before finalizing a transaction"
+      ],
+      unsupported_use_cases: [
+        "Distinguishing a genuine interaction from a coerced one with certainty",
+        "Sole basis for blocking a person"
+      ],
+      related_frameworks: ["App Attest", "DeviceCheck"],
+      related_capabilities: ["app-attest"],
+      related_entitlements: ["com.apple.developer.trustinsights.base"],
+      platforms: ["iOS", "iPadOS"],
+      minimum_os_version: {
+        iOS: "27.0",
+        iPadOS: "27.0"
+      },
+      sdk_availability: "Framework page lists iOS 27.0, iPadOS 27.0 and Mac Catalyst 27.0; the entitlement page lists iOS and iPadOS only.",
+      stable_or_beta: "stable",
+      on_device_level: "hybrid",
+      network_requirement: "Requires internet connectivity to return results (iOS 27 release notes).",
+      cloud_dependency: "Evaluation results depend on an Apple service reached over the network.",
+      user_permissions: ["Person's authorization per InsightContext via requestAuthorization(for:)"],
+      xcode_capabilities: ["Trust Insights"],
+      entitlements: ["com.apple.developer.trustinsights.base"],
+      app_review_considerations: [
+        "Report consumption feedback with reportConsumption only for insights actually used"
+      ],
+      security_considerations: ["A negative insight is a signal, not proof; combine with your own fraud controls"],
+      implementation_notes: [
+        "Check authorizationStatus(for:) and request authorization before requestEvaluation(context:)",
+        "The single supported request today is IsLikelyBeingCoachedInsight"
+      ],
+      limitations: ["Entitlement acquisition path and region availability were not stated on the fetched pages"],
+      keywords: ["trust insights", "trustinsights", "coercion", "social engineering", "scam", "coaching", "fraud"],
+      official_documentation: [
+        {
+          title: "Trust Insights",
+          url: "https://developer.apple.com/documentation/trustinsights",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "Trust Insights entitlement (com.apple.developer.trustinsights.base)",
+          url: "https://developer.apple.com/documentation/bundleresources/entitlements/com.apple.developer.trustinsights.base",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        }
+      ],
+      release_notes: [
+        {
+          title: "iOS & iPadOS 27 Release Notes",
+          url: "https://developer.apple.com/documentation/ios-ipados-release-notes/ios-ipados-27-release-notes",
+          source_type: "release_notes",
+          verified_at: "2026-09-30"
+        }
+      ],
+      last_verified_at: "2026-09-30"
+    },
+    {
+      id: "audioaccessorykit",
+      name: "AudioAccessoryKit",
+      aliases: ["Audio Accessory Kit", "AccessoryControlDevice", "automatic audio switching"],
+      category: "nearby_accessories",
+      entity_type: "framework",
+      summary: "Lets third-party audio accessory makers report placement and connected sources so iOS can switch audio automatically; customer use is limited to the EU.",
+      supported_use_cases: [
+        "Report earbud or headphone placement (inEar, onHead, offHead) for automatic audio switching",
+        "Report primary and secondary connected audio sources",
+        "Provide headphone information for fixed spatial audio (developer testing in iOS 27.0)"
+      ],
+      unsupported_use_cases: [
+        "Customer-facing production use outside the EU",
+        "Use on Apple platforms other than iPhone and iPad"
+      ],
+      related_frameworks: ["AccessorySetupKit", "Core Bluetooth"],
+      related_capabilities: ["core-bluetooth"],
+      platforms: ["iOS", "iPadOS"],
+      minimum_os_version: {
+        iOS: "26.4",
+        iPadOS: null
+      },
+      sdk_availability: "Framework page lists iOS 26.4. Fixed spatial audio support is developer-testing only on iPhone and iPad in iOS 27.0.",
+      stable_or_beta: "stable",
+      supported_devices: ["iPhone", "iPad"],
+      region_restrictions: [
+        "Customer installations can use the framework only on devices in the EU signed in with an Apple Account for an EU country or region; developer testing works in any region"
+      ],
+      hardware_requirements: ["Bluetooth audio accessory paired with AccessorySetupKit"],
+      network_requirement: "Uses the local Bluetooth connection to the accessory.",
+      implementation_notes: [
+        "Pair the accessory with AccessorySetupKit, then register an AccessoryControlDevice with audioSwitching and placement capabilities",
+        "Update devicePlacement from an app extension whenever placement changes"
+      ],
+      limitations: [
+        "iPadOS minimum version is not stated separately on the fetched page",
+        "Entitlement and Info.plist requirements were not fetched"
+      ],
+      keywords: ["audioaccessorykit", "audio switching", "earbuds", "headphones", "placement", "accessory", "eu"],
+      official_documentation: [
+        {
+          title: "AudioAccessoryKit",
+          url: "https://developer.apple.com/documentation/audioaccessorykit",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "Supporting automatic audio switching for third-party accessories",
+          url: "https://developer.apple.com/documentation/audioaccessorykit/supporting-automatic-audio-switching",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        }
+      ],
+      release_notes: [
+        {
+          title: "iOS & iPadOS 27 Release Notes",
+          url: "https://developer.apple.com/documentation/ios-ipados-release-notes/ios-ipados-27-release-notes",
+          source_type: "release_notes",
+          verified_at: "2026-09-30"
+        }
+      ],
+      last_verified_at: "2026-09-30"
+    },
+    {
+      id: "mediadevice",
+      name: "MediaDevice",
+      aliases: ["Media Device", "MediaDeviceExtension", "media sharing extension", "MediaSharingExtensions"],
+      category: "audio_video_media",
+      entity_type: "framework",
+      summary: "iOS 27 framework for media-sharing protocol providers to expose TVs, speakers and streaming devices in the system media device picker through an extension.",
+      supported_use_cases: [
+        "Discover and activate third-party playback hardware from a MediaDeviceExtension",
+        "Receive real-time audio and video samples through RealtimeSampleHandling",
+        "Let any media app stream to the device via AVSystemRouting"
+      ],
+      unsupported_use_cases: [
+        "Persistent connections beyond discovery before the system activates a device",
+        "Container apps with purposes other than delivering the extension"
+      ],
+      related_frameworks: ["AVSystemRouting", "ScreenCaptureKit", "AVFoundation"],
+      related_capabilities: ["avsystemrouting"],
+      related_entitlements: ["com.apple.developer.media-device-extension"],
+      related_extensions: ["Media device extension (com.apple.media-device-extension)"],
+      platforms: ["iOS", "iPadOS"],
+      minimum_os_version: {
+        iOS: "27.0",
+        iPadOS: "27.0"
+      },
+      sdk_availability: "Framework page also lists Mac Catalyst 27.0; the entitlement page lists iOS and iPadOS.",
+      stable_or_beta: "stable",
+      on_device_level: "hybrid",
+      network_requirement: "Depends on the media sharing protocol used to reach the device.",
+      entitlements: ["com.apple.developer.media-device-extension"],
+      app_review_considerations: [
+        "An app holding com.apple.developer.media-device-extension cannot hold any other managed entitlements",
+        "The container app's sole purpose must be delivering and installing the media device extension"
+      ],
+      implementation_notes: [
+        "Both the extension and container app declare the entitlement with media-device-protocol. identifiers matching UTExportedTypeDeclarations",
+        "Set EXExtensionPointIdentifier to com.apple.media-device-extension",
+        "Real-time streaming and screen mirroring need an audio server driver plug-in published shortly after activation"
+      ],
+      limitations: [
+        "iOS 27.0 release notes list a fixed issue where extensions built with MediaDeviceExtension built but did not run because of an entitlement runtime-check mismatch; confirm on current builds",
+        "Whether the entitlement requires Apple approval was not stated"
+      ],
+      keywords: [
+        "mediadevice",
+        "media device extension",
+        "media sharing protocol",
+        "airplay alternative",
+        "route picker",
+        "ios 27"
+      ],
+      official_documentation: [
+        {
+          title: "Media Device",
+          url: "https://developer.apple.com/documentation/mediadevice",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "Creating a media device extension",
+          url: "https://developer.apple.com/documentation/mediadevice/creating-a-media-device-extension",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "com.apple.developer.media-device-extension",
+          url: "https://developer.apple.com/documentation/bundleresources/entitlements/com.apple.developer.media-device-extension",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        }
+      ],
+      release_notes: [
+        {
+          title: "iOS & iPadOS 27 Release Notes",
+          url: "https://developer.apple.com/documentation/ios-ipados-release-notes/ios-ipados-27-release-notes",
+          source_type: "release_notes",
+          verified_at: "2026-09-30"
+        }
+      ],
+      last_verified_at: "2026-09-30"
+    },
+    {
+      id: "avsystemrouting",
+      name: "AVSystemRouting",
+      aliases: ["AVSystemRouteController", "MDESupportedProtocols"],
+      category: "audio_video_media",
+      entity_type: "framework",
+      summary: "iOS 27 app-side framework for sending media to devices exposed by third-party media device extensions.",
+      supported_use_cases: [
+        "Observe route events and start playback sessions on third-party devices",
+        "Manage remote playback through AVSystemRouteMediaSession and its data channel"
+      ],
+      unsupported_use_cases: ["Implementing the device protocol itself (that lives in a MediaDeviceExtension)"],
+      related_frameworks: ["MediaDevice", "AVFoundation"],
+      related_capabilities: ["mediadevice", "avfoundation"],
+      platforms: ["iOS", "iPadOS"],
+      minimum_os_version: {
+        iOS: "27.0",
+        iPadOS: "27.0"
+      },
+      sdk_availability: "Framework page also lists Mac Catalyst 27.0.",
+      stable_or_beta: "stable",
+      on_device_level: "hybrid",
+      network_requirement: "Depends on the selected device and protocol.",
+      info_plist_keys: ["MDESupportedProtocols", "MDESupportsUniversalURLPlayback"],
+      implementation_notes: [
+        "Register an AVSystemRouteControllerObserver on the shared AVSystemRouteController",
+        "On an activate event create an AVSystemRouteSession with a URL and a LaunchMode the device supports",
+        "Declare supported protocols in the Info pane"
+      ],
+      limitations: [
+        "Requires a media device extension from a protocol provider to be installed for devices to appear"
+      ],
+      keywords: ["avsystemrouting", "route picker", "media device", "playback routing", "ios 27"],
+      official_documentation: [
+        {
+          title: "AVSystemRouting",
+          url: "https://developer.apple.com/documentation/avsystemrouting",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "Media Device",
+          url: "https://developer.apple.com/documentation/mediadevice",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        }
+      ],
+      release_notes: [
+        {
+          title: "iOS & iPadOS 27 Release Notes",
+          url: "https://developer.apple.com/documentation/ios-ipados-release-notes/ios-ipados-27-release-notes",
+          source_type: "release_notes",
+          verified_at: "2026-09-30"
+        }
+      ],
+      last_verified_at: "2026-09-30"
+    },
+    {
+      id: "nowplaying",
+      name: "Now Playing",
+      aliases: ["NowPlaying", "RemoteMediaSession", "MediaSession", "RemoteMediaSessionExtension"],
+      category: "audio_video_media",
+      entity_type: "framework",
+      summary: "iOS 27 Observable-model framework for publishing local and remote media sessions to the Lock Screen, Control Center, Apple Watch and CarPlay.",
+      supported_use_cases: [
+        "Publish local playback with MediaSessionRepresentable and MediaSession",
+        "Publish playback on external devices with a RemoteMediaSessionExtension",
+        "Start and update remote sessions from APNs pushes of type nowplaying when the app is not running"
+      ],
+      unsupported_use_cases: [
+        "Mixing with MPNowPlayingInfoCenter or MPRemoteCommandCenter for local playback (undefined behavior)"
+      ],
+      related_frameworks: ["MediaPlayer", "AVFoundation", "APNs", "CarPlay"],
+      related_capabilities: ["apns", "avfoundation"],
+      related_extensions: ["Remote media session extension (com.apple.nowplaying.remote-media)"],
+      platforms: ["iOS", "iPadOS", "macOS", "tvOS", "visionOS", "watchOS"],
+      minimum_os_version: {
+        iOS: "27.0",
+        iPadOS: "27.0",
+        macOS: "27.0",
+        tvOS: "27.0",
+        visionOS: "27.0",
+        watchOS: "27.0"
+      },
+      sdk_availability: "Framework page also lists Mac Catalyst 27.0. MediaPlayer MPNowPlayingInfoCenter (iOS 5) remains the older path.",
+      stable_or_beta: "stable",
+      on_device_level: "hybrid",
+      network_requirement: "Remote-session push start and update need APNs; local sessions need no network.",
+      cloud_dependency: "Push-driven remote sessions use APNs.",
+      implementation_notes: [
+        "Call requestToBecomeSystemPrimary() only while the app is in the foreground; from the background it has no effect",
+        "APNs pushes use push type nowplaying and topic <bundle-id>.push-type.nowplaying",
+        "Observe pushToStartTokenUpdates and per-session pushTokenUpdates and send tokens to the server",
+        "The extension declares EXExtensionPointIdentifier com.apple.nowplaying.remote-media"
+      ],
+      limitations: [
+        "Known issue in iOS 27.0: RemoteMediaSession tokens are always provisioned for the production APNs environment even when aps-environment is development; test with production (workaround from release notes)",
+        "Release notes list a fixed issue where a RemoteMediaSession created in the foreground was not visible in Control Center"
+      ],
+      recommended_alternatives: [
+        "MPNowPlayingInfoCenter and MPRemoteCommandCenter for apps that must support OS versions before 27"
+      ],
+      keywords: [
+        "now playing",
+        "remotemediasession",
+        "lock screen",
+        "control center",
+        "media session",
+        "carplay",
+        "ios 27"
+      ],
+      official_documentation: [
+        {
+          title: "Now Playing",
+          url: "https://developer.apple.com/documentation/nowplaying",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "Publishing remote media sessions",
+          url: "https://developer.apple.com/documentation/nowplaying/publishing-remote-media-sessions",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "MPNowPlayingInfoCenter",
+          url: "https://developer.apple.com/documentation/mediaplayer/mpnowplayinginfocenter",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "MPRemoteCommandCenter",
+          url: "https://developer.apple.com/documentation/mediaplayer/mpremotecommandcenter",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        }
+      ],
+      release_notes: [
+        {
+          title: "iOS & iPadOS 27 Release Notes",
+          url: "https://developer.apple.com/documentation/ios-ipados-release-notes/ios-ipados-27-release-notes",
+          source_type: "release_notes",
+          verified_at: "2026-09-30"
+        }
+      ],
+      last_verified_at: "2026-09-30"
+    },
+    {
+      id: "wifi-aware",
+      name: "Wi-Fi Aware",
+      aliases: ["WiFiAware", "Neighbor Awareness Networking", "NAN"],
+      category: "nearby_accessories",
+      entity_type: "framework",
+      summary: "Secure peer-to-peer discovery, pairing and connections to Wi-Fi Aware certified accessories without infrastructure or internet.",
+      supported_use_cases: [
+        "Publish or subscribe to Wi-Fi Aware services",
+        "Pair and connect to certified accessories with encrypted, authenticated links",
+        "Run high-bandwidth, low-latency transfers alongside an infrastructure Wi-Fi network"
+      ],
+      unsupported_use_cases: ["Connecting to devices that are not Wi-Fi Aware certified"],
+      related_frameworks: ["Network", "DeviceDiscoveryUI", "AccessorySetupKit"],
+      related_capabilities: ["network", "core-bluetooth"],
+      related_entitlements: ["com.apple.developer.wifi-aware"],
+      platforms: ["iOS", "iPadOS"],
+      minimum_os_version: {
+        iOS: "26.0",
+        iPadOS: "26.0"
+      },
+      sdk_availability: "Framework page also lists Mac Catalyst 26.0. Xcode 27 fixes missing wifiAware NWParameters extensions.",
+      stable_or_beta: "stable",
+      on_device_level: "fully_on_device",
+      network_requirement: "No internet, access point, cellular link or cloud server is needed.",
+      cloud_dependency: null,
+      supported_devices: [
+        "iPhone 12 and later",
+        "iPad (10th generation) and later",
+        "iPad Air (4th generation) and later",
+        "iPad Pro 11-inch (3rd generation) and later",
+        "iPad Pro 12.9-inch (5th generation) and later",
+        "iPad mini (6th generation) and later"
+      ],
+      hardware_requirements: ["Wi-Fi Aware certified accessory"],
+      xcode_capabilities: ["Wi-Fi Aware"],
+      entitlements: ["com.apple.developer.wifi-aware (array containing Publish, Subscribe or both)"],
+      info_plist_keys: ["WiFiAwareServices"],
+      implementation_notes: [
+        "Service names need an underscore prefix, a _tcp or _udp suffix, at most 15 characters for the component, and must match Info.plist exactly; invalid names crash the app",
+        "Each service needs a Publishable and/or Subscribable entry or the framework crashes the app",
+        "The app can connect to paired devices in foreground and background; get runtime with BackgroundTasks"
+      ],
+      limitations: ["A given service can be published at most once per device"],
+      keywords: ["wi-fi aware", "wifiaware", "p2p", "peer to peer", "nan", "accessory", "pairing"],
+      official_documentation: [
+        {
+          title: "Wi-Fi Aware",
+          url: "https://developer.apple.com/documentation/wifiaware",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "Adopting Wi-Fi Aware",
+          url: "https://developer.apple.com/documentation/wifiaware/adopting-wi-fi-aware",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "com.apple.developer.wifi-aware",
+          url: "https://developer.apple.com/documentation/bundleresources/entitlements/com.apple.developer.wifi-aware",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        }
+      ],
+      release_notes: [
+        {
+          title: "Xcode 27 Release Notes",
+          url: "https://developer.apple.com/documentation/xcode-release-notes/xcode-27-release-notes",
+          source_type: "release_notes",
+          verified_at: "2026-09-30"
+        }
+      ],
+      last_verified_at: "2026-09-30"
+    },
+    {
+      id: "musickit",
+      name: "MusicKit",
+      aliases: ["Apple Music API", "MusicAuthorization", "ApplicationMusicPlayer"],
+      category: "audio_video_media",
+      entity_type: "framework",
+      summary: "Swift model, catalog request and playback layer for Apple Music, gated by user authorization and the MusicKit App Service on the App ID.",
+      supported_use_cases: [
+        "Search the Apple Music catalog and load items",
+        "Play catalog music with ApplicationMusicPlayer or SystemMusicPlayer",
+        "Check MusicSubscription capabilities and present subscription offers"
+      ],
+      unsupported_use_cases: [
+        "Playing Apple Music content without user authorization and an eligible subscription",
+        "Gathering the user's music data for other purposes"
+      ],
+      related_frameworks: ["MediaPlayer", "StoreKit"],
+      related_capabilities: ["storekit-2", "avfoundation"],
+      platforms: ["iOS", "iPadOS", "macOS", "tvOS", "visionOS", "watchOS"],
+      minimum_os_version: {
+        iOS: "15.0",
+        iPadOS: "15.0",
+        macOS: "12.0",
+        tvOS: "15.0",
+        visionOS: "1.0",
+        watchOS: "8.0"
+      },
+      sdk_availability: "Framework starts at iOS 15, macOS 12, tvOS 15, watchOS 8 and visionOS 1.0.",
+      stable_or_beta: "stable",
+      on_device_level: "cloud_required",
+      network_requirement: "Catalog requests and streaming need network access to Apple Music.",
+      cloud_dependency: "Apple Music catalog and Apple Music API.",
+      user_permissions: [
+        "MusicAuthorization request; the system terminates the app if NSAppleMusicUsageDescription is missing when accessing music"
+      ],
+      info_plist_keys: ["NSAppleMusicUsageDescription"],
+      app_review_considerations: [
+        "Playback of Apple Music content requires the person to have an eligible subscription; offer subscription flows through MusicKit UI"
+      ],
+      implementation_notes: [
+        "Enable the MusicKit App Service on the explicit App ID in the developer account; the sample states no other Xcode configuration is needed",
+        "Sample project must run on a physical device",
+        "Automatic token generation is available for Apple Music API calls"
+      ],
+      limitations: ["Apple Music catalog availability varies by storefront; regional coverage was not fetched"],
+      keywords: ["musickit", "apple music", "music catalog", "music player", "music authorization", "subscription"],
+      official_documentation: [
+        {
+          title: "MusicKit",
+          url: "https://developer.apple.com/documentation/musickit",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "Using MusicKit to integrate with Apple Music",
+          url: "https://developer.apple.com/documentation/musickit/using-musickit-to-integrate-with-apple-music",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "NSAppleMusicUsageDescription",
+          url: "https://developer.apple.com/documentation/bundleresources/information-property-list/nsapplemusicusagedescription",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        }
+      ],
+      last_verified_at: "2026-09-30"
+    },
+    {
+      id: "apple-pay",
+      name: "Apple Pay",
+      aliases: ["PKPaymentRequest", "PKPaymentAuthorizationController", "Merchant IDs", "PayWithApplePayButton"],
+      category: "commerce_wallet",
+      entity_type: "apple_service",
+      summary: "In-app payment sheet for physical goods, services and donations, configured with a merchant ID, payment processing certificate and the Apple Pay capability.",
+      supported_use_cases: [
+        "Pay for real-world goods and services or donate to nonprofits in the app",
+        "Recurring, deferred and automatic-reload payment requests",
+        "Shipping, coupon and payment-method updates in the payment sheet"
+      ],
+      unsupported_use_cases: ["Digital goods and services delivered in the app (use In-App Purchase)"],
+      related_frameworks: ["PassKit", "StoreKit"],
+      related_capabilities: ["storekit-2", "passkit-wallet"],
+      related_entitlements: ["com.apple.developer.in-app-payments"],
+      platforms: ["iOS", "iPadOS", "macOS", "watchOS", "visionOS"],
+      minimum_os_version: {
+        iOS: "6.0",
+        iPadOS: "6.0",
+        macOS: "11.0",
+        watchOS: "2.0",
+        visionOS: "1.0"
+      },
+      sdk_availability: "PassKit Apple Pay APIs start at iOS 6, macOS 11, watchOS 2 and visionOS 1.0.",
+      stable_or_beta: "stable",
+      on_device_level: "cloud_required",
+      network_requirement: "Payment processing needs network access to your payment processor.",
+      cloud_dependency: "Payment service provider and Apple Pay servers.",
+      xcode_capabilities: ["Apple Pay"],
+      entitlements: ["com.apple.developer.in-app-payments (array of merchant IDs)"],
+      app_review_considerations: [
+        "Apple Pay is for physical goods and services and donations; digital goods delivered in the app belong to In-App Purchase"
+      ],
+      security_considerations: [
+        "Payment tokens are decrypted with the payment processing certificate private key; keep it with your PSP or secured backend"
+      ],
+      implementation_notes: [
+        "Create a merchant identifier and a Payment Processing certificate in the developer account, then add the Apple Pay capability",
+        "Regional regulations may require specific PKPaymentRequest properties; check with your PSP"
+      ],
+      limitations: ["Market and region availability was not fetched"],
+      keywords: ["apple pay", "pkpaymentrequest", "merchant id", "payment sheet", "passkit", "checkout"],
+      official_documentation: [
+        {
+          title: "PassKit",
+          url: "https://developer.apple.com/documentation/passkit",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "Apple Pay",
+          url: "https://developer.apple.com/documentation/passkit/apple-pay",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "Setting up Apple Pay",
+          url: "https://developer.apple.com/documentation/passkit/setting-up-apple-pay",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "Complying with regional regulations",
+          url: "https://developer.apple.com/documentation/passkit/complying-with-regional-regulations",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "Merchant IDs Entitlement",
+          url: "https://developer.apple.com/documentation/bundleresources/entitlements/com.apple.developer.in-app-payments",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        }
+      ],
+      last_verified_at: "2026-09-30"
+    },
+    {
+      id: "passkit-wallet",
+      name: "PassKit",
+      aliases: ["Wallet", "Apple Wallet", "PKPass", "PKPassLibrary", "PKAddPassesViewController"],
+      category: "commerce_wallet",
+      entity_type: "framework",
+      summary: "Add and manage Wallet passes, update them by push, and use Wallet identity and secure-element pass APIs.",
+      supported_use_cases: [
+        "Add boarding passes, tickets, loyalty and gift cards to Wallet",
+        "Read and manage passes in PKPassLibrary for allowed pass type IDs",
+        "Request identity data from a Wallet pass with the Verify with Wallet APIs"
+      ],
+      unsupported_use_cases: ["Accessing passes for pass type identifiers not in the entitlement"],
+      related_frameworks: ["Apple Pay", "APNs"],
+      related_capabilities: ["apple-pay", "apns"],
+      related_entitlements: [
+        "com.apple.developer.pass-type-identifiers",
+        "com.apple.developer.in-app-identity-presentment"
+      ],
+      platforms: ["iOS", "iPadOS", "macOS", "watchOS", "visionOS"],
+      minimum_os_version: {
+        iOS: "6.0",
+        iPadOS: "6.0",
+        macOS: "11.0",
+        watchOS: "2.0",
+        visionOS: "1.0"
+      },
+      sdk_availability: "PassKit starts at iOS 6, macOS 11, watchOS 2 and visionOS 1.0.",
+      stable_or_beta: "stable",
+      on_device_level: "hybrid",
+      network_requirement: "Pass updates use push notifications and server calls.",
+      cloud_dependency: "Your pass web service and APNs for pass updates.",
+      xcode_capabilities: ["Wallet"],
+      entitlements: [
+        "com.apple.developer.pass-type-identifiers (array of pass type identifiers; $(TeamIdentifierPrefix)* for all team passes)"
+      ],
+      implementation_notes: [
+        "Enable the Wallet capability and select pass type IDs in the provisioning profile",
+        "App Clips can use the Wallet capability from iOS 17"
+      ],
+      limitations: [
+        "Provisioning of payment cards into Wallet uses separate managed capabilities; the entitlement name was not verified",
+        "Identity presentment entitlement details were not fetched"
+      ],
+      keywords: ["wallet", "passkit", "pass", "boarding pass", "loyalty card", "pkpasslibrary", "verify with wallet"],
+      official_documentation: [
+        {
+          title: "PassKit",
+          url: "https://developer.apple.com/documentation/passkit",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "Wallet",
+          url: "https://developer.apple.com/documentation/passkit/wallet",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "Pass Type IDs Entitlement",
+          url: "https://developer.apple.com/documentation/bundleresources/entitlements/com.apple.developer.pass-type-identifiers",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        }
+      ],
+      last_verified_at: "2026-09-30"
+    },
+    {
+      id: "core-nfc",
+      name: "Core NFC",
+      aliases: [
+        "Near Field Communication Tag Reading",
+        "NFCNDEFReaderSession",
+        "NFCTagReaderSession",
+        "CardSession",
+        "host card emulation"
+      ],
+      category: "nearby_accessories",
+      entity_type: "framework",
+      summary: "Read NFC tags (NDEF, ISO 7816, ISO 15693, FeliCa, MIFARE) on supported iPhones, with managed host card emulation in the EEA.",
+      supported_use_cases: [
+        "Read and write NDEF tags",
+        "Interact with ISO 7816, ISO 15693, FeliCa and MIFARE tags",
+        "Background tag reading of URI records on iPhone XS and later",
+        "Host card emulation with CardSession in the EEA"
+      ],
+      unsupported_use_cases: [
+        "Use in app extensions",
+        "NFCTagReaderSession selection of payment-related application IDs (use NFCPaymentTagReaderSession in the EU)",
+        "Host card emulation outside the EEA"
+      ],
+      related_frameworks: ["Wallet", "PassKit"],
+      related_capabilities: ["passkit-wallet"],
+      related_entitlements: ["com.apple.developer.nfc.readersession.formats", "com.apple.developer.nfc.hce"],
+      platforms: ["iOS", "iPadOS"],
+      minimum_os_version: {
+        iOS: "11.0",
+        iPadOS: "11.0"
+      },
+      sdk_availability: "Reader sessions start at iOS 11; NFCTagReaderSession at iOS 13; CardSession at iOS 17.4. Mac Catalyst 13.1 is listed but needs NFC hardware.",
+      stable_or_beta: "stable",
+      on_device_level: "fully_on_device",
+      network_requirement: "Tag reading needs no network.",
+      cloud_dependency: null,
+      hardware_requirements: [
+        "Device with NFC; check NFCReaderSession.readingAvailable before starting a session",
+        "Background tag reading: iPhone XS and later",
+        "CardSession also requires CardSession.isSupported and isEligible"
+      ],
+      region_restrictions: ["Host card emulation with CardSession is documented for the European Economic Area"],
+      info_plist_keys: [
+        "NFCReaderUsageDescription",
+        "com.apple.developer.nfc.readersession.iso7816.select-identifiers (Info.plist key listing ISO 7816 application IDs)"
+      ],
+      xcode_capabilities: ["Near Field Communication Tag Reading"],
+      entitlements: ["com.apple.developer.nfc.readersession.formats"],
+      managed_entitlements: [
+        "com.apple.developer.nfc.hce (apply to Apple; CardSession raises fatalError without it)"
+      ],
+      app_review_considerations: [
+        "Only one reader session of any type can be active; additional sessions queue in FIFO order"
+      ],
+      implementation_notes: [
+        "Include D2760000850101 in the ISO 7816 identifiers only if you want an NFCISO7816Tag rather than an NFCMiFareTag for MIFARE DESFire NDEF",
+        "Background tag reading is unavailable while the device has never been unlocked, a reader session is running, Wallet is in use, the camera is in use or Airplane mode is on"
+      ],
+      limitations: [
+        "Not available in app extensions",
+        "Background tag reading only handles NDEF URI records with universal links or supported URL schemes"
+      ],
+      keywords: [
+        "core nfc",
+        "nfc",
+        "ndef",
+        "tag reading",
+        "iso7816",
+        "felica",
+        "mifare",
+        "host card emulation",
+        "cardsession"
+      ],
+      official_documentation: [
+        {
+          title: "Core NFC",
+          url: "https://developer.apple.com/documentation/corenfc",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "NFCTagReaderSession",
+          url: "https://developer.apple.com/documentation/corenfc/nfctagreadersession",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "Adding support for background tag reading",
+          url: "https://developer.apple.com/documentation/corenfc/adding-support-for-background-tag-reading",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "CardSession",
+          url: "https://developer.apple.com/documentation/corenfc/cardsession",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "NFC Tag Reader Session Formats Entitlement",
+          url: "https://developer.apple.com/documentation/bundleresources/entitlements/com.apple.developer.nfc.readersession.formats",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "com.apple.developer.nfc.hce",
+          url: "https://developer.apple.com/documentation/bundleresources/entitlements/com.apple.developer.nfc.hce",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "NFCReaderUsageDescription",
+          url: "https://developer.apple.com/documentation/bundleresources/information-property-list/nfcreaderusagedescription",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        }
+      ],
+      last_verified_at: "2026-09-30"
+    },
+    {
+      id: "callkit",
+      name: "CallKit",
+      aliases: ["CXProvider", "CXCallController", "Call Directory extension"],
+      category: "personal_information",
+      entity_type: "framework",
+      summary: "System calling UI and call directory integration for VoIP services, paired with PushKit for incoming VoIP calls.",
+      supported_use_cases: [
+        "Present incoming and outgoing call UI for a VoIP service",
+        "Provide caller ID and blocking through a Call Directory extension"
+      ],
+      unsupported_use_cases: [
+        "Handling PushKit VoIP pushes without reporting a call to CallKit (apps built with iOS 13 SDK or later)"
+      ],
+      related_frameworks: ["PushKit", "Intents"],
+      related_capabilities: ["pushkit", "apns"],
+      related_extensions: ["Call Directory extension"],
+      platforms: ["iOS", "iPadOS", "macOS", "watchOS", "visionOS"],
+      minimum_os_version: {
+        iOS: "10.0",
+        iPadOS: "10.0",
+        macOS: "13.0",
+        watchOS: "9.0",
+        visionOS: "1.0"
+      },
+      sdk_availability: "CallKit starts at iOS 10, macOS 13, watchOS 9 and visionOS 1.0.",
+      stable_or_beta: "stable",
+      on_device_level: "hybrid",
+      network_requirement: "Your VoIP back end handles call signaling and media.",
+      cloud_dependency: "Your VoIP service.",
+      app_review_considerations: [
+        "Calls the person makes may be offered as Journal suggestions through JournalingSuggestions"
+      ],
+      implementation_notes: [
+        "Set SRResearchDataGeneration to NO to prevent SensorKit Speech Metrics collection while the CallKit app is in use"
+      ],
+      limitations: ["Background modes for VoIP were not verified for this record"],
+      keywords: ["callkit", "voip", "incoming call", "cxprovider", "call directory", "caller id"],
+      official_documentation: [
+        {
+          title: "CallKit",
+          url: "https://developer.apple.com/documentation/callkit",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "Making and receiving VoIP calls",
+          url: "https://developer.apple.com/documentation/callkit/making-and-receiving-voip-calls",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        }
+      ],
+      last_verified_at: "2026-09-30"
+    },
+    {
+      id: "pushkit",
+      name: "PushKit",
+      aliases: ["PKPushRegistry", "VoIP push"],
+      category: "notifications_background",
+      entity_type: "framework",
+      summary: "Specialized APNs notifications that wake the app for VoIP calls, complications and file provider changes.",
+      supported_use_cases: [
+        "Receive incoming VoIP call pushes",
+        "Update watchOS complications and respond to file provider changes"
+      ],
+      unsupported_use_cases: [
+        "VoIP pushes without CallKit for apps built with the iOS 13 SDK or later; use UserNotifications instead"
+      ],
+      related_frameworks: ["CallKit", "UserNotifications"],
+      related_capabilities: ["callkit", "apns", "user-notifications"],
+      platforms: ["iOS", "iPadOS", "macOS", "watchOS", "visionOS"],
+      minimum_os_version: {
+        iOS: "8.0",
+        iPadOS: "8.0",
+        macOS: "10.15",
+        watchOS: "6.0",
+        visionOS: "1.0"
+      },
+      sdk_availability: "PushKit starts at iOS 8, macOS 10.15, watchOS 6 and visionOS 1.0.",
+      stable_or_beta: "stable",
+      on_device_level: "cloud_required",
+      network_requirement: "Delivered through APNs.",
+      cloud_dependency: "APNs and your provider server.",
+      implementation_notes: [
+        "Create and configure a PKPushRegistry on every launch and assign a delegate before setting desiredPushTypes",
+        "Send the returned token to your server"
+      ],
+      limitations: [
+        "Requires CallKit for VoIP calls in apps built with the iOS 13 SDK or later",
+        "UIBackgroundModes voip value not verified in this record"
+      ],
+      keywords: ["pushkit", "voip", "pkpushregistry", "wake app", "apns"],
+      official_documentation: [
+        {
+          title: "PushKit",
+          url: "https://developer.apple.com/documentation/pushkit",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "Responding to VoIP notifications from PushKit",
+          url: "https://developer.apple.com/documentation/pushkit/responding-to-voip-notifications-from-pushkit",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "PKPushRegistry",
+          url: "https://developer.apple.com/documentation/pushkit/pkpushregistry",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        }
+      ],
+      last_verified_at: "2026-09-30"
+    },
+    {
+      id: "arkit",
+      name: "ARKit",
+      aliases: ["ARSession", "ARWorldTrackingConfiguration", "ARFaceTrackingConfiguration"],
+      category: "graphics_spatial",
+      entity_type: "framework",
+      summary: "Augmented reality tracking and scene understanding using device motion, world tracking and the camera.",
+      supported_use_cases: [
+        "World tracking and scene understanding on iOS",
+        "Face tracking on TrueDepth devices",
+        "ARKitSession data providers on visionOS"
+      ],
+      unsupported_use_cases: ["Face tracking on devices without TrueDepth"],
+      related_frameworks: ["RealityKit", "SceneKit", "AVFoundation"],
+      related_capabilities: ["realitykit", "avfoundation"],
+      platforms: ["iOS", "iPadOS", "visionOS"],
+      minimum_os_version: {
+        iOS: "11.0",
+        iPadOS: "11.0",
+        visionOS: "1.0"
+      },
+      sdk_availability: "ARKit requires iOS 11 and an A9 or later processor; some features need later iOS versions or specific devices.",
+      stable_or_beta: "stable",
+      on_device_level: "fully_on_device",
+      network_requirement: "No network required.",
+      cloud_dependency: null,
+      supported_devices: ["iOS devices with A9 or later"],
+      hardware_requirements: ["Back camera for world tracking", "TrueDepth camera for ARFaceTrackingConfiguration"],
+      user_permissions: ["Camera access; ARKit prompts on first AR session"],
+      info_plist_keys: ["NSCameraUsageDescription", "UIRequiredDeviceCapabilities: arkit (only if AR is required)"],
+      implementation_notes: [
+        "Test ARConfiguration.isSupported before offering AR features unless AR is required",
+        "Adding arkit to UIRequiredDeviceCapabilities limits the app to compatible devices"
+      ],
+      limitations: ["visionOS uses ARKitSession with separate authorization; details not fetched here"],
+      keywords: ["arkit", "augmented reality", "ar", "world tracking", "face tracking"],
+      official_documentation: [
+        {
+          title: "ARKit",
+          url: "https://developer.apple.com/documentation/arkit",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "Verifying device support and user permission",
+          url: "https://developer.apple.com/documentation/arkit/verifying-device-support-and-user-permission",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "NSCameraUsageDescription",
+          url: "https://developer.apple.com/documentation/bundleresources/information-property-list/nscamerausagedescription",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        }
+      ],
+      last_verified_at: "2026-09-30"
+    },
+    {
+      id: "realitykit",
+      name: "RealityKit",
+      aliases: ["Reality Composer Pro", "RealityView"],
+      category: "graphics_spatial",
+      entity_type: "framework",
+      summary: "AR-first 3D simulation and rendering framework for iOS, iPadOS, macOS, tvOS and visionOS.",
+      supported_use_cases: [
+        "3D and AR scenes with entities and components",
+        "Physics, animation and spatial audio",
+        "Shared and SharePlay AR experiences"
+      ],
+      related_frameworks: ["ARKit", "Metal", "SwiftUI"],
+      related_capabilities: ["arkit", "swiftui"],
+      platforms: ["iOS", "iPadOS", "macOS", "tvOS", "visionOS"],
+      minimum_os_version: {
+        iOS: "13.0",
+        iPadOS: "13.0",
+        macOS: "10.15",
+        tvOS: "26.0",
+        visionOS: "1.0"
+      },
+      sdk_availability: "RealityKit starts at iOS 13, macOS 10.15, tvOS 26 and visionOS 1.0.",
+      stable_or_beta: "stable",
+      on_device_level: "fully_on_device",
+      network_requirement: "No network required.",
+      cloud_dependency: null,
+      implementation_notes: [
+        "Author assets with Reality Composer Pro",
+        "Gaussian splat rendering guidelines exist for 3DGS content"
+      ],
+      limitations: [
+        "iOS 27.0 release notes list a fixed GaussianSplatComponent issue with missing splats after moving offscreen"
+      ],
+      keywords: ["realitykit", "3d", "ar", "entity component", "reality composer pro", "gaussian splat"],
+      official_documentation: [
+        {
+          title: "RealityKit",
+          url: "https://developer.apple.com/documentation/realitykit",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        }
+      ],
+      release_notes: [
+        {
+          title: "iOS & iPadOS 27 Release Notes",
+          url: "https://developer.apple.com/documentation/ios-ipados-release-notes/ios-ipados-27-release-notes",
+          source_type: "release_notes",
+          verified_at: "2026-09-30"
+        }
+      ],
+      last_verified_at: "2026-09-30"
+    },
+    {
+      id: "gamekit",
+      name: "GameKit",
+      aliases: ["Game Center", "GKLocalPlayer", "GKLeaderboard", "GKAchievement"],
+      category: "gaming",
+      entity_type: "framework",
+      summary: "Game Center social features: authentication, leaderboards, achievements, challenges, activities and multiplayer.",
+      supported_use_cases: [
+        "Authenticate the local player",
+        "Leaderboards, achievements, challenges and activities",
+        "Real-time and turn-based multiplayer"
+      ],
+      unsupported_use_cases: ["Using GameKit before enabling Game Center (notAuthenticated error)"],
+      related_frameworks: ["GameController", "SpriteKit", "CloudKit"],
+      related_capabilities: ["cloudkit"],
+      related_entitlements: ["com.apple.developer.game-center"],
+      platforms: ["iOS", "iPadOS", "macOS", "tvOS", "watchOS", "visionOS"],
+      minimum_os_version: {
+        iOS: "3.0",
+        iPadOS: "3.0",
+        macOS: "10.8",
+        tvOS: "9.0",
+        watchOS: "3.0",
+        visionOS: "1.0"
+      },
+      sdk_availability: "GameKit starts at iOS 3, macOS 10.8, tvOS 9, watchOS 3 and visionOS 1.0; the Game Center entitlement page lists iOS 15.",
+      stable_or_beta: "stable",
+      on_device_level: "cloud_required",
+      network_requirement: "Game Center features need network access.",
+      cloud_dependency: "Game Center service and App Store Connect configuration.",
+      xcode_capabilities: ["Game Center"],
+      entitlements: ["com.apple.developer.game-center"],
+      implementation_notes: [
+        "Configure leaderboards, achievements, activities and challenges with a GameKit bundle file or App Store Connect",
+        "On Mac targets enable Incoming and Outgoing Connections in App Sandbox"
+      ],
+      limitations: ["Player privacy uses scoped identifiers"],
+      keywords: ["gamekit", "game center", "leaderboard", "achievement", "multiplayer", "matchmaking"],
+      official_documentation: [
+        {
+          title: "GameKit",
+          url: "https://developer.apple.com/documentation/gamekit",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "Initializing and configuring Game Center",
+          url: "https://developer.apple.com/documentation/gamekit/initializing-and-configuring-game-center",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "Game Center Entitlement",
+          url: "https://developer.apple.com/documentation/bundleresources/entitlements/com.apple.developer.game-center",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        }
+      ],
+      last_verified_at: "2026-09-30"
+    },
+    {
+      id: "spritekit",
+      name: "SpriteKit",
+      aliases: ["SKScene", "SKView"],
+      category: "gaming",
+      entity_type: "framework",
+      summary: "Metal-backed 2D drawing, animation, particle and physics framework for games and graphics apps.",
+      supported_use_cases: ["2D scenes, sprites, particles, text and video", "Physics and animation"],
+      unsupported_use_cases: ["Use in apps built specifically for visionOS"],
+      related_frameworks: ["GameplayKit", "Metal", "SceneKit"],
+      platforms: ["iOS", "iPadOS", "macOS", "tvOS", "watchOS", "visionOS"],
+      minimum_os_version: {
+        iOS: "7.0",
+        iPadOS: "7.0",
+        macOS: "10.9",
+        tvOS: "9.0",
+        watchOS: "10.0",
+        visionOS: "1.0"
+      },
+      sdk_availability: "SpriteKit starts at iOS 7, macOS 10.9, tvOS 9, watchOS 10 and visionOS 1.0; on visionOS only in compatible iPhone and iPad apps.",
+      stable_or_beta: "stable",
+      on_device_level: "fully_on_device",
+      network_requirement: "No network required.",
+      cloud_dependency: null,
+      keywords: ["spritekit", "2d game", "sprites", "particles", "skscene"],
+      official_documentation: [
+        {
+          title: "SpriteKit",
+          url: "https://developer.apple.com/documentation/spritekit",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        }
+      ],
+      last_verified_at: "2026-09-30"
+    },
+    {
+      id: "core-haptics",
+      name: "Core Haptics",
+      aliases: ["CHHapticEngine", "CHHapticPattern"],
+      category: "ui",
+      entity_type: "framework",
+      summary: "Custom haptic and audio feedback patterns built from transient and continuous haptic events.",
+      supported_use_cases: ["Play custom haptic patterns with CHHapticEngine", "Combine haptic events with audio"],
+      unsupported_use_cases: ["Overriding system haptics; the OS can still override requests"],
+      related_frameworks: ["UIKit", "AVFoundation"],
+      related_capabilities: ["uikit"],
+      platforms: ["iOS", "iPadOS", "macOS", "tvOS", "visionOS"],
+      minimum_os_version: {
+        iOS: "13.0",
+        iPadOS: "13.0",
+        macOS: "10.15",
+        tvOS: "14.0",
+        visionOS: "1.0"
+      },
+      sdk_availability: "Core Haptics starts at iOS 13, macOS 10.15, tvOS 14 and visionOS 1.0.",
+      stable_or_beta: "stable",
+      on_device_level: "fully_on_device",
+      network_requirement: "No network required.",
+      cloud_dependency: null,
+      hardware_requirements: ["Haptic-capable hardware; query CHHapticEngine hardware capabilities before use"],
+      implementation_notes: [
+        "Keep a strong reference to the engine while a pattern plays",
+        "Start the engine before playing patterns and stop it when done"
+      ],
+      limitations: ["Exact device support list was not fetched"],
+      keywords: ["core haptics", "haptics", "chhapticengine", "vibration"],
+      official_documentation: [
+        {
+          title: "Core Haptics",
+          url: "https://developer.apple.com/documentation/corehaptics",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "CHHapticEngine",
+          url: "https://developer.apple.com/documentation/corehaptics/chhapticengine",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        }
+      ],
+      last_verified_at: "2026-09-30"
+    },
+    {
+      id: "pencilkit",
+      name: "PencilKit",
+      aliases: ["PKCanvasView", "PKDrawing"],
+      category: "files_documents",
+      entity_type: "framework",
+      summary: "Hand-drawn content canvas and tool picker for Apple Pencil and finger input.",
+      supported_use_cases: ["Capture drawings with PKCanvasView", "Save PKDrawing data and render it as images"],
+      related_frameworks: ["UIKit"],
+      related_capabilities: ["uikit"],
+      platforms: ["iOS", "iPadOS", "macOS", "visionOS"],
+      minimum_os_version: {
+        iOS: "13.0",
+        iPadOS: "13.0",
+        macOS: "10.15",
+        visionOS: "1.0"
+      },
+      sdk_availability: "PencilKit starts at iOS 13, macOS 10.15 and visionOS 1.0. iOS 27 renames __PKStrokeRenderState to PKStrokeRenderStateReference.",
+      stable_or_beta: "stable",
+      on_device_level: "fully_on_device",
+      network_requirement: "No network required.",
+      cloud_dependency: null,
+      limitations: ["iOS 27 release notes list a PKStrokeRenderState rename; update code that uses it"],
+      keywords: ["pencilkit", "apple pencil", "pkcanvasview", "drawing", "ink"],
+      official_documentation: [
+        {
+          title: "PencilKit",
+          url: "https://developer.apple.com/documentation/pencilkit",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        }
+      ],
+      release_notes: [
+        {
+          title: "iOS & iPadOS 27 Release Notes",
+          url: "https://developer.apple.com/documentation/ios-ipados-release-notes/ios-ipados-27-release-notes",
+          source_type: "release_notes",
+          verified_at: "2026-09-30"
+        }
+      ],
+      last_verified_at: "2026-09-30"
+    },
+    {
+      id: "shared-with-you",
+      name: "Shared with You",
+      aliases: ["SharedWithYou", "SWHighlightCenter", "SWAttributionView"],
+      category: "app_extensions",
+      entity_type: "framework",
+      summary: "Surface content shared in Messages inside the app with a Shared with You shelf and attribution views; builds on universal links.",
+      supported_use_cases: [
+        "Show a shelf of items shared with the person in Messages",
+        "Attribute shared content with SWAttributionView",
+        "Add shared-content collaboration"
+      ],
+      unsupported_use_cases: ["Sharing content that lacks universal links"],
+      related_frameworks: ["Messages", "Associated Domains"],
+      related_capabilities: ["core-spotlight"],
+      platforms: ["iOS", "iPadOS", "macOS", "tvOS", "visionOS"],
+      minimum_os_version: {
+        iOS: "16.0",
+        iPadOS: "16.0",
+        macOS: "13.0",
+        tvOS: "16.0",
+        visionOS: "1.0"
+      },
+      sdk_availability: "Shared with You starts at iOS 16, macOS 13, tvOS 16 and visionOS 1.0.",
+      stable_or_beta: "stable",
+      on_device_level: "primarily_on_device",
+      network_requirement: "Depends on your universal-link content.",
+      xcode_capabilities: ["Shared with You"],
+      implementation_notes: [
+        "Adopt universal links with Associated Domains first",
+        "Add the Shared with You capability in Xcode"
+      ],
+      limitations: ["The entitlement string was not verified; the entitlement documentation page returned 404"],
+      keywords: ["shared with you", "swhighlight", "messages", "universal links", "attribution view"],
+      official_documentation: [
+        {
+          title: "Shared with You",
+          url: "https://developer.apple.com/documentation/sharedwithyou",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "Making your app content shareable",
+          url: "https://developer.apple.com/documentation/sharedwithyou/making-your-app-content-shareable",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        }
+      ],
+      last_verified_at: "2026-09-30"
+    },
+    {
+      id: "speech",
+      name: "Speech",
+      aliases: ["SpeechAnalyzer", "SpeechTranscriber", "SFSpeechRecognizer"],
+      category: "ai_ml",
+      entity_type: "framework",
+      summary: "Speech recognition through the legacy SFSpeechRecognizer and the iOS 26 SpeechAnalyzer modules.",
+      supported_use_cases: [
+        "On-device transcription with SpeechAnalyzer and SpeechTranscriber",
+        "Recognition of audio files and streams with SFSpeechRecognizer"
+      ],
+      related_frameworks: ["AVFoundation", "Natural Language"],
+      related_capabilities: ["avfoundation"],
+      platforms: ["iOS", "iPadOS", "macOS", "visionOS"],
+      minimum_os_version: {
+        iOS: "10.0",
+        iPadOS: "10.0",
+        macOS: "10.15",
+        visionOS: "1.0"
+      },
+      sdk_availability: "SFSpeechRecognizer starts at iOS 10; SpeechAnalyzer starts at iOS 26.0 and also lists tvOS 26.0.",
+      stable_or_beta: "stable",
+      on_device_level: "hybrid",
+      network_requirement: "SFSpeechRecognizer may send audio to Apple servers for some languages; SpeechAnalyzer modules don't send audio to Apple servers.",
+      cloud_dependency: "Apple speech recognition servers for server-based SFSpeechRecognizer recognition.",
+      user_permissions: ["Speech recognition authorization", "Microphone access for live capture"],
+      info_plist_keys: ["NSSpeechRecognitionUsageDescription", "NSMicrophoneUsageDescription"],
+      language_restrictions: [
+        "Each SFSpeechRecognizer supports one language chosen at creation and some languages may need internet; SpeechAnalyzer assets must be installed via AssetInventory"
+      ],
+      security_considerations: [
+        "Captured voice audio is sensitive; protect it and obtain permission before sending it across the network"
+      ],
+      implementation_notes: [
+        "Check SFSpeechRecognizer isAvailable before starting a task",
+        "SpeechAnalyzer analyzes one input sequence at a time and returns results as AsyncSequence"
+      ],
+      limitations: ["Locale coverage for SpeechTranscriber was not fetched"],
+      keywords: ["speech", "speechanalyzer", "speechtranscriber", "sfspeechrecognizer", "dictation", "transcription"],
+      official_documentation: [
+        {
+          title: "Speech",
+          url: "https://developer.apple.com/documentation/speech",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "SpeechAnalyzer",
+          url: "https://developer.apple.com/documentation/speech/speechanalyzer",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "SFSpeechRecognizer",
+          url: "https://developer.apple.com/documentation/speech/sfspeechrecognizer",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "Asking permission to use speech recognition",
+          url: "https://developer.apple.com/documentation/speech/asking-permission-to-use-speech-recognition",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "NSSpeechRecognitionUsageDescription",
+          url: "https://developer.apple.com/documentation/bundleresources/information-property-list/nsspeechrecognitionusagedescription",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        }
+      ],
+      last_verified_at: "2026-09-30"
+    },
+    {
+      id: "soundanalysis",
+      name: "Sound Analysis",
+      aliases: ["SoundAnalysis", "SNClassifySoundRequest"],
+      category: "ai_ml",
+      entity_type: "framework",
+      summary: "Identify sounds in audio files or streams with the built-in classifier or a custom Core ML model.",
+      supported_use_cases: [
+        "Classify over 300 built-in sounds",
+        "Run custom sound classification models trained with Create ML"
+      ],
+      related_frameworks: ["Core ML", "AVFoundation"],
+      related_capabilities: ["core-ml", "avfoundation"],
+      platforms: ["iOS", "iPadOS", "macOS", "tvOS", "watchOS", "visionOS"],
+      minimum_os_version: {
+        iOS: "13.0",
+        iPadOS: "13.0",
+        macOS: "10.15",
+        tvOS: "13.0",
+        watchOS: "9.0",
+        visionOS: "1.0"
+      },
+      sdk_availability: "Sound Analysis starts at iOS 13, macOS 10.15, tvOS 13, watchOS 9 and visionOS 1.0.",
+      stable_or_beta: "stable",
+      on_device_level: "fully_on_device",
+      network_requirement: "No network required.",
+      cloud_dependency: null,
+      user_permissions: ["Microphone access when analyzing live input"],
+      info_plist_keys: ["NSMicrophoneUsageDescription (live microphone input)"],
+      keywords: ["sound analysis", "soundanalysis", "snclassifysoundrequest", "audio classification"],
+      official_documentation: [
+        {
+          title: "Sound Analysis",
+          url: "https://developer.apple.com/documentation/soundanalysis",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "NSMicrophoneUsageDescription",
+          url: "https://developer.apple.com/documentation/bundleresources/information-property-list/nsmicrophoneusagedescription",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        }
+      ],
+      last_verified_at: "2026-09-30"
+    },
+    {
+      id: "natural-language",
+      name: "Natural Language",
+      aliases: ["NaturalLanguage", "NLTagger", "NLEmbedding"],
+      category: "ai_ml",
+      entity_type: "framework",
+      summary: "Text analysis: language identification, tokenization, tagging, lemmatization, entity recognition, sentiment and embeddings.",
+      supported_use_cases: [
+        "Detect language and tokenize text",
+        "Tag parts of speech and named entities",
+        "Compute sentiment and text embeddings"
+      ],
+      related_frameworks: ["Core ML", "Speech", "Foundation Models"],
+      related_capabilities: ["core-ml", "foundation-models"],
+      platforms: ["iOS", "iPadOS", "macOS", "tvOS", "watchOS", "visionOS"],
+      minimum_os_version: {
+        iOS: "12.0",
+        iPadOS: "12.0",
+        macOS: "10.14",
+        tvOS: "12.0",
+        watchOS: "5.0",
+        visionOS: "1.0"
+      },
+      sdk_availability: "Natural Language starts at iOS 12, macOS 10.14, tvOS 12, watchOS 5 and visionOS 1.0.",
+      stable_or_beta: "stable",
+      on_device_level: "fully_on_device",
+      network_requirement: "No network required.",
+      cloud_dependency: null,
+      language_restrictions: ["Support varies by language and task; per-language coverage was not fetched"],
+      keywords: ["natural language", "nltagger", "nlembedding", "sentiment", "tokenization", "nlp"],
+      official_documentation: [
+        {
+          title: "Natural Language",
+          url: "https://developer.apple.com/documentation/naturallanguage",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        }
+      ],
+      last_verified_at: "2026-09-30"
+    },
+    {
+      id: "tipkit",
+      name: "TipKit",
+      aliases: ["Tip", "TipView"],
+      category: "ui",
+      entity_type: "framework",
+      summary: "Contextual tips with display rules that highlight features people haven't discovered.",
+      supported_use_cases: [
+        "Show inline or popover tips",
+        "Rule- and event-based tip display",
+        "Sync tip state with a CloudKit container"
+      ],
+      unsupported_use_cases: ["Guiding people through the whole app", "Advertising or promotion"],
+      related_frameworks: ["SwiftUI", "UIKit", "CloudKit"],
+      related_capabilities: ["swiftui", "cloudkit"],
+      platforms: ["iOS", "iPadOS", "macOS", "tvOS", "watchOS", "visionOS"],
+      minimum_os_version: {
+        iOS: "17.0",
+        iPadOS: "17.0",
+        macOS: "14.0",
+        tvOS: "16.0",
+        watchOS: "10.0",
+        visionOS: "1.0"
+      },
+      sdk_availability: "TipKit starts at iOS 17, macOS 14, tvOS 16 and watchOS 10.",
+      stable_or_beta: "stable",
+      on_device_level: "fully_on_device",
+      network_requirement: "No network required; optional CloudKit sync.",
+      implementation_notes: ["Use showTipsForTesting and resetDatastore while developing"],
+      keywords: ["tipkit", "tips", "onboarding", "tipview", "display rules"],
+      official_documentation: [
+        {
+          title: "TipKit",
+          url: "https://developer.apple.com/documentation/tipkit",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        }
+      ],
+      last_verified_at: "2026-09-30"
+    },
+    {
+      id: "swift-charts",
+      name: "Swift Charts",
+      aliases: ["Charts"],
+      category: "ui",
+      entity_type: "framework",
+      summary: "SwiftUI framework for marks, scales, axes and legends to visualize data.",
+      supported_use_cases: ["Line, bar and scatter charts", "Accessible, localized charts"],
+      related_frameworks: ["SwiftUI"],
+      related_capabilities: ["swiftui", "accessibility"],
+      platforms: ["iOS", "iPadOS", "macOS", "tvOS", "watchOS", "visionOS"],
+      minimum_os_version: {
+        iOS: "16.0",
+        iPadOS: "16.0",
+        macOS: "13.0",
+        tvOS: "16.0",
+        watchOS: "9.0",
+        visionOS: "1.0"
+      },
+      sdk_availability: "Swift Charts starts at iOS 16, macOS 13, tvOS 16, watchOS 9 and visionOS 1.0.",
+      stable_or_beta: "stable",
+      on_device_level: "fully_on_device",
+      network_requirement: "No network required.",
+      cloud_dependency: null,
+      keywords: ["swift charts", "charts", "data visualization", "marks"],
+      official_documentation: [
+        {
+          title: "Swift Charts",
+          url: "https://developer.apple.com/documentation/charts",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        }
+      ],
+      last_verified_at: "2026-09-30"
+    },
+    {
+      id: "pdfkit",
+      name: "PDFKit",
+      aliases: ["PDFView", "PDFDocument"],
+      category: "files_documents",
+      entity_type: "framework",
+      summary: "Display, annotate and manipulate PDF documents.",
+      supported_use_cases: ["Display PDFs with PDFView", "Search and annotate PDF documents"],
+      related_frameworks: ["QuickLook", "UIKit"],
+      related_capabilities: ["uikit"],
+      platforms: ["iOS", "iPadOS", "macOS", "visionOS"],
+      minimum_os_version: {
+        iOS: "11.0",
+        iPadOS: "11.0",
+        macOS: "10.4",
+        visionOS: "1.0"
+      },
+      sdk_availability: "PDFKit starts at iOS 11, macOS 10.4 and visionOS 1.0.",
+      stable_or_beta: "stable",
+      on_device_level: "fully_on_device",
+      network_requirement: "No network required.",
+      cloud_dependency: null,
+      keywords: ["pdfkit", "pdf", "pdfview", "annotation"],
+      official_documentation: [
+        {
+          title: "PDFKit",
+          url: "https://developer.apple.com/documentation/pdfkit",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        }
+      ],
+      last_verified_at: "2026-09-30"
+    },
+    {
+      id: "statereporting",
+      name: "StateReporting",
+      aliases: ["StateReportingDomain"],
+      category: "testing_diagnostics",
+      entity_type: "framework",
+      summary: "iOS 27 framework for named state domains and transitions that MetricKit and Instruments use to segment performance data.",
+      supported_use_cases: [
+        "Emit structured app state transitions",
+        "Segment MetricKit metrics and diagnostics by state",
+        "View state transitions in the Points of Interest instrument"
+      ],
+      related_frameworks: ["MetricKit", "Instruments"],
+      related_capabilities: ["metrickit"],
+      platforms: ["iOS", "iPadOS", "macOS", "tvOS", "visionOS", "watchOS"],
+      minimum_os_version: {
+        iOS: "27.0",
+        iPadOS: "27.0",
+        macOS: "27.0",
+        tvOS: "27.0",
+        visionOS: "27.0",
+        watchOS: "27.0"
+      },
+      sdk_availability: "Framework page lists 27.0 for iOS, iPadOS, Mac Catalyst, macOS, tvOS, visionOS and watchOS.",
+      stable_or_beta: "stable",
+      on_device_level: "fully_on_device",
+      network_requirement: "No network required.",
+      cloud_dependency: null,
+      keywords: ["statereporting", "metrickit", "app state", "instruments", "points of interest"],
+      official_documentation: [
+        {
+          title: "StateReporting",
+          url: "https://developer.apple.com/documentation/statereporting",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        }
+      ],
+      release_notes: [
+        {
+          title: "Xcode 27 Release Notes",
+          url: "https://developer.apple.com/documentation/xcode-release-notes/xcode-27-release-notes",
+          source_type: "release_notes",
+          verified_at: "2026-09-30"
+        }
+      ],
+      last_verified_at: "2026-09-30"
+    },
+    {
+      id: "ios-27-2-beta-additions",
+      name: "iOS 27.2 beta SDK additions",
+      aliases: ["iOS 27.2 beta", "Xcode 27.2 beta", "ATT expanded prompt"],
+      category: "system_intelligence",
+      entity_type: "api",
+      summary: "Beta-only iOS 27.2 changes, including the App Tracking Transparency expanded prompt for EU users and the .xcproj project format, that must not be treated as shipping guidance.",
+      supported_use_cases: [
+        "Evaluate the iOS 27.2 beta App Tracking Transparency expanded prompt for EU users",
+        "Evaluate the Xcode 27.2 beta JSON-based .xcproj project format"
+      ],
+      unsupported_use_cases: [
+        "Shipping a production dependency on iOS 27.2 beta APIs before the SDK exits beta",
+        "Assuming Mac Catalyst builds can use iOS 27.1 or 27.2 APIs without availability guards"
+      ],
+      platforms: ["iOS", "iPadOS"],
+      minimum_os_version: {
+        iOS: "27.2 beta",
+        iPadOS: "27.2 beta"
+      },
+      sdk_availability: "iOS 27.2 SDK in Xcode 27.2 beta 2; Apple lists both as beta at the time of review.",
+      stable_or_beta: "beta",
+      region_restrictions: [
+        "The App Tracking Transparency expanded prompt is required for users in France, Germany, Italy, Poland, and Romania per the iOS 27.2 beta 2 release notes; final release behavior is unverified"
+      ],
+      on_device_level: "primarily_on_device",
+      network_requirement: "No network is required by the documented beta additions.",
+      cloud_dependency: null,
+      implementation_notes: [
+        "Keep beta-only code behind availability checks and isolate it from the stable architecture",
+        "See apptrackingtransparency for the stable requestTrackingAuthorization baseline"
+      ],
+      limitations: [
+        "Beta API and behavior may change before release",
+        "Projects that use APIs specific to iOS 27.1 can fail to compile for Mac Catalyst in Xcode 27.2 beta 2",
+        "Xcode 27.2 beta SDKs incorrectly report 27.1 as a valid deployment target for macOS, watchOS, tvOS, and visionOS"
+      ],
+      related_capabilities: ["apptrackingtransparency"],
+      keywords: ["ios 27.2", "beta", "att", "expanded prompt", "xcproj"],
+      official_documentation: [
+        {
+          title: "requestTrackingAuthorization(preferExpandedInterface:additionalInformationAction:completionHandler:)",
+          url: "https://developer.apple.com/documentation/apptrackingtransparency/attrackingmanager/requesttrackingauthorization(preferexpandedinterface:additionalinformationaction:completionhandler:)",
+          source_type: "apple_developer_documentation",
+          verified_at: "2026-09-30"
+        }
+      ],
+      release_notes: [
+        {
+          title: "iOS & iPadOS 27.2 beta 2 release notes",
+          url: "https://developer.apple.com/documentation/ios-ipados-release-notes/ios-ipados-27_2-release-notes",
+          source_type: "release_notes",
+          verified_at: "2026-09-30"
+        },
+        {
+          title: "Xcode 27.2 beta 2 release notes",
+          url: "https://developer.apple.com/documentation/xcode-release-notes/xcode-27_2-release-notes",
+          source_type: "release_notes",
+          verified_at: "2026-09-30"
+        }
+      ],
+      last_verified_at: "2026-09-30"
     }
   ]
 };
@@ -3977,7 +7054,11 @@ var taxonomy_default = {
       name: "Swift and core development",
       examples: ["Swift", "Swift Concurrency", "Foundation", "Swift Package Manager"]
     },
-    { id: "ui", name: "User interface", examples: ["SwiftUI", "UIKit", "Observation", "Accessibility"] },
+    {
+      id: "ui",
+      name: "User interface",
+      examples: ["SwiftUI", "UIKit", "Observation", "Accessibility", "TipKit", "Swift Charts"]
+    },
     {
       id: "networking",
       name: "Foundation and networking",
@@ -3996,7 +7077,7 @@ var taxonomy_default = {
     {
       id: "ai_ml",
       name: "Apple Intelligence and machine learning",
-      examples: ["Foundation Models", "Core ML", "Core AI", "Vision", "Natural Language", "Speech"]
+      examples: ["Foundation Models", "Core ML", "Core AI", "Vision", "Natural Language", "Speech", "Sound Analysis"]
     },
     {
       id: "system_intelligence",
@@ -4016,7 +7097,7 @@ var taxonomy_default = {
     {
       id: "notifications_background",
       name: "Notifications and background execution",
-      examples: ["UserNotifications", "APNs", "BackgroundTasks", "Background URLSession"]
+      examples: ["UserNotifications", "APNs", "BackgroundTasks", "Background URLSession", "PushKit"]
     },
     {
       id: "widgets_live_activities",
@@ -4031,7 +7112,7 @@ var taxonomy_default = {
     {
       id: "audio_video_media",
       name: "Audio, video, and media",
-      examples: ["AVFoundation", "Core Audio", "MediaPlayer", "MusicKit", "ShazamKit"]
+      examples: ["AVFoundation", "Core Audio", "MediaPlayer", "MusicKit", "ShazamKit", "Core Haptics"]
     },
     {
       id: "camera_photos_vision",
@@ -4041,14 +7122,25 @@ var taxonomy_default = {
     {
       id: "nearby_accessories",
       name: "Nearby devices and accessories",
-      examples: ["Core Bluetooth", "Nearby Interaction", "Core NFC", "MultipeerConnectivity", "AccessorySetupKit"]
+      examples: [
+        "Core Bluetooth",
+        "Nearby Interaction",
+        "Core NFC",
+        "MultipeerConnectivity",
+        "AccessorySetupKit",
+        "AudioAccessoryKit"
+      ]
     },
     {
       id: "network_extensions",
       name: "Advanced networking and extensions",
       examples: ["NetworkExtension", "VPN", "DNS Proxy", "Content Filter"]
     },
-    { id: "home_matter", name: "Home and Matter", examples: ["HomeKit", "Matter", "MatterSupport"] },
+    {
+      id: "home_matter",
+      name: "Home and Matter",
+      examples: ["HomeKit", "Matter", "MatterSupport"]
+    },
     {
       id: "graphics_spatial",
       name: "Graphics, AR, and spatial",
@@ -4087,7 +7179,14 @@ var taxonomy_default = {
     {
       id: "privacy_integrity",
       name: "Privacy and app integrity",
-      examples: ["Privacy Manifests", "Required Reason APIs", "AppTrackingTransparency", "App Attest", "DeviceCheck"]
+      examples: [
+        "Privacy Manifests",
+        "Required Reason APIs",
+        "AppTrackingTransparency",
+        "App Attest",
+        "DeviceCheck",
+        "Enhanced Security"
+      ]
     },
     {
       id: "testing_diagnostics",
@@ -4097,7 +7196,7 @@ var taxonomy_default = {
     {
       id: "developer_delivery",
       name: "Development and delivery tools",
-      examples: ["Xcode", "Simulator", "TestFlight", "App Store Connect"]
+      examples: ["Xcode", "Simulator", "TestFlight", "App Store Connect", "Background Assets", "On Demand Resources"]
     },
     {
       id: "provisioning_capabilities",
@@ -4159,7 +7258,8 @@ var taxonomy_default = {
         "Time Sensitive Notifications",
         "Wallet",
         "WeatherKit",
-        "Wireless Accessory Configuration"
+        "Wireless Accessory Configuration",
+        "Background Inference entitlement"
       ]
     },
     {
@@ -23354,7 +26454,7 @@ var getProfileInputSchema = external_exports.object({
   capability_id_or_name: capabilityIdentifierSchema.describe("Exact or recognizable reviewed capability ID or name.")
 });
 var getAppleTechnologyInputSchema = external_exports.object({
-  technology_id_or_name: external_exports.string().trim().min(1).max(200).describe("Exact Apple technology catalog ID or name, such as HealthKit or technology.arkit.")
+  technology_id_or_name: external_exports.string().trim().min(1).max(200).describe("Exact Apple technology catalog ID or name, such as RoomPlan or technology.roomplan.")
 });
 var technologyCatalogEntrySchema = external_exports.object({
   id: external_exports.string().min(1),

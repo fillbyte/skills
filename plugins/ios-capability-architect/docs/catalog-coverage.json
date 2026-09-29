@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "as_of": "2026-08-31",
+  "as_of": "2026-09-30",
   "status_contract": {
     "discovered": "Present in the committed snapshot extracted from Apple's official technologies page.",
     "catalogued": "Present in taxonomy.json with a deterministic canonical identity; not recommendation evidence.",
@@ -8,13 +8,13 @@
     "reviewed": "Profiled and every matched profile has dated official Apple evidence."
   },
   "counts": {
-    "taxonomy_occurrence_count": 207,
+    "taxonomy_occurrence_count": 217,
     "discovered_technology_count": 71,
-    "catalogued_technology_count": 193,
-    "profiled_technology_count": 48,
-    "reviewed_technology_count": 48,
+    "catalogued_technology_count": 203,
+    "profiled_technology_count": 83,
+    "reviewed_technology_count": 83,
     "discovered_only_count": 47,
-    "catalog_only_count": 145
+    "catalog_only_count": 120
   },
   "entries": [
     {
@@ -400,14 +400,14 @@
     {
       "canonical_id": "technology.apple-pay",
       "name": "Apple Pay",
-      "status": "catalogued",
+      "status": "reviewed",
       "discovered": true,
       "catalogued": true,
-      "profiled": false,
-      "reviewed": false,
+      "profiled": true,
+      "reviewed": true,
       "taxonomy_names": ["Apple Pay"],
       "category_ids": ["commerce_wallet", "provisioning_capabilities"],
-      "profile_ids": [],
+      "profile_ids": ["apple-pay"],
       "source_urls": [
         "https://developer.apple.com/apple-pay/",
         "https://developer.apple.com/documentation/bundleresources",
@@ -426,7 +426,7 @@
       "reviewed": false,
       "taxonomy_names": [],
       "category_ids": [],
-      "profile_ids": [],
+      "profile_ids": ["passkit-wallet"],
       "source_urls": ["https://developer.apple.com/wallet/"]
     },
     {
@@ -450,14 +450,14 @@
     {
       "canonical_id": "technology.arkit",
       "name": "ARKit",
-      "status": "catalogued",
+      "status": "reviewed",
       "discovered": false,
       "catalogued": true,
-      "profiled": false,
-      "reviewed": false,
+      "profiled": true,
+      "reviewed": true,
       "taxonomy_names": ["ARKit"],
       "category_ids": ["graphics_spatial"],
-      "profile_ids": [],
+      "profile_ids": ["arkit"],
       "source_urls": [
         "https://developer.apple.com/documentation/bundleresources",
         "https://developer.apple.com/documentation/updates",
@@ -508,6 +508,24 @@
       "category_ids": [],
       "profile_ids": [],
       "source_urls": ["https://developer.apple.com/documentation/technologyoverviews/audio-and-video"]
+    },
+    {
+      "canonical_id": "technology.audioaccessorykit",
+      "name": "AudioAccessoryKit",
+      "status": "reviewed",
+      "discovered": false,
+      "catalogued": true,
+      "profiled": true,
+      "reviewed": true,
+      "taxonomy_names": ["AudioAccessoryKit"],
+      "category_ids": ["nearby_accessories"],
+      "profile_ids": ["audioaccessorykit"],
+      "source_urls": [
+        "https://developer.apple.com/documentation/bundleresources",
+        "https://developer.apple.com/documentation/updates",
+        "https://developer.apple.com/help/account/reference/supported-capabilities-ios/",
+        "https://developer.apple.com/technologies/"
+      ]
     },
     {
       "canonical_id": "technology.augmented-reality",
@@ -597,14 +615,50 @@
     {
       "canonical_id": "technology.avsystemrouting",
       "name": "AVSystemRouting",
-      "status": "catalogued",
+      "status": "reviewed",
       "discovered": false,
       "catalogued": true,
-      "profiled": false,
-      "reviewed": false,
+      "profiled": true,
+      "reviewed": true,
       "taxonomy_names": ["AVSystemRouting"],
       "category_ids": ["emerging_platform_technologies"],
-      "profile_ids": [],
+      "profile_ids": ["avsystemrouting"],
+      "source_urls": [
+        "https://developer.apple.com/documentation/bundleresources",
+        "https://developer.apple.com/documentation/updates",
+        "https://developer.apple.com/help/account/reference/supported-capabilities-ios/",
+        "https://developer.apple.com/technologies/"
+      ]
+    },
+    {
+      "canonical_id": "technology.background-assets",
+      "name": "Background Assets",
+      "status": "reviewed",
+      "discovered": false,
+      "catalogued": true,
+      "profiled": true,
+      "reviewed": true,
+      "taxonomy_names": ["Background Assets"],
+      "category_ids": ["developer_delivery"],
+      "profile_ids": ["background-assets"],
+      "source_urls": [
+        "https://developer.apple.com/documentation/bundleresources",
+        "https://developer.apple.com/documentation/updates",
+        "https://developer.apple.com/help/account/reference/supported-capabilities-ios/",
+        "https://developer.apple.com/technologies/"
+      ]
+    },
+    {
+      "canonical_id": "technology.background-inference-entitlement",
+      "name": "Background Inference entitlement",
+      "status": "reviewed",
+      "discovered": false,
+      "catalogued": true,
+      "profiled": true,
+      "reviewed": true,
+      "taxonomy_names": ["Background Inference entitlement"],
+      "category_ids": ["provisioning_capabilities"],
+      "profile_ids": ["background-inference-entitlement"],
       "source_urls": [
         "https://developer.apple.com/documentation/bundleresources",
         "https://developer.apple.com/documentation/updates",
@@ -700,14 +754,14 @@
     {
       "canonical_id": "technology.callkit",
       "name": "CallKit",
-      "status": "catalogued",
+      "status": "reviewed",
       "discovered": false,
       "catalogued": true,
-      "profiled": false,
-      "reviewed": false,
+      "profiled": true,
+      "reviewed": true,
       "taxonomy_names": ["CallKit"],
       "category_ids": ["personal_information"],
-      "profile_ids": [],
+      "profile_ids": ["callkit"],
       "source_urls": [
         "https://developer.apple.com/documentation/bundleresources",
         "https://developer.apple.com/documentation/updates",
@@ -866,14 +920,14 @@
     {
       "canonical_id": "technology.core-ai",
       "name": "Core AI",
-      "status": "catalogued",
+      "status": "reviewed",
       "discovered": true,
       "catalogued": true,
-      "profiled": false,
-      "reviewed": false,
+      "profiled": true,
+      "reviewed": true,
       "taxonomy_names": ["Core AI"],
       "category_ids": ["ai_ml", "emerging_platform_technologies"],
-      "profile_ids": [],
+      "profile_ids": ["core-ai"],
       "source_urls": [
         "https://developer.apple.com/core-ai/",
         "https://developer.apple.com/documentation/bundleresources",
@@ -942,6 +996,24 @@
       "taxonomy_names": ["Core Data"],
       "category_ids": ["persistence_sync"],
       "profile_ids": ["core-data"],
+      "source_urls": [
+        "https://developer.apple.com/documentation/bundleresources",
+        "https://developer.apple.com/documentation/updates",
+        "https://developer.apple.com/help/account/reference/supported-capabilities-ios/",
+        "https://developer.apple.com/technologies/"
+      ]
+    },
+    {
+      "canonical_id": "technology.core-haptics",
+      "name": "Core Haptics",
+      "status": "reviewed",
+      "discovered": false,
+      "catalogued": true,
+      "profiled": true,
+      "reviewed": true,
+      "taxonomy_names": ["Core Haptics"],
+      "category_ids": ["audio_video_media"],
+      "profile_ids": ["core-haptics"],
       "source_urls": [
         "https://developer.apple.com/documentation/bundleresources",
         "https://developer.apple.com/documentation/updates",
@@ -1024,14 +1096,14 @@
     {
       "canonical_id": "technology.core-nfc",
       "name": "Core NFC",
-      "status": "catalogued",
+      "status": "reviewed",
       "discovered": false,
       "catalogued": true,
-      "profiled": false,
-      "reviewed": false,
+      "profiled": true,
+      "reviewed": true,
       "taxonomy_names": ["Core NFC"],
       "category_ids": ["nearby_accessories"],
-      "profile_ids": [],
+      "profile_ids": ["core-nfc"],
       "source_urls": [
         "https://developer.apple.com/documentation/bundleresources",
         "https://developer.apple.com/documentation/updates",
@@ -1266,6 +1338,24 @@
       "taxonomy_names": ["EnergyKit"],
       "category_ids": ["emerging_platform_technologies"],
       "profile_ids": [],
+      "source_urls": [
+        "https://developer.apple.com/documentation/bundleresources",
+        "https://developer.apple.com/documentation/updates",
+        "https://developer.apple.com/help/account/reference/supported-capabilities-ios/",
+        "https://developer.apple.com/technologies/"
+      ]
+    },
+    {
+      "canonical_id": "technology.enhanced-security",
+      "name": "Enhanced Security",
+      "status": "reviewed",
+      "discovered": false,
+      "catalogued": true,
+      "profiled": true,
+      "reviewed": true,
+      "taxonomy_names": ["Enhanced Security"],
+      "category_ids": ["privacy_integrity"],
+      "profile_ids": ["enhanced-security"],
       "source_urls": [
         "https://developer.apple.com/documentation/bundleresources",
         "https://developer.apple.com/documentation/updates",
@@ -1539,14 +1629,14 @@
     {
       "canonical_id": "technology.game-center",
       "name": "Game Center",
-      "status": "catalogued",
+      "status": "reviewed",
       "discovered": true,
       "catalogued": true,
-      "profiled": false,
-      "reviewed": false,
+      "profiled": true,
+      "reviewed": true,
       "taxonomy_names": ["Game Center"],
       "category_ids": ["gaming", "provisioning_capabilities"],
-      "profile_ids": [],
+      "profile_ids": ["gamekit"],
       "source_urls": [
         "https://developer.apple.com/documentation/bundleresources",
         "https://developer.apple.com/documentation/updates",
@@ -1589,14 +1679,14 @@
     {
       "canonical_id": "technology.gamekit",
       "name": "GameKit",
-      "status": "catalogued",
+      "status": "reviewed",
       "discovered": false,
       "catalogued": true,
-      "profiled": false,
-      "reviewed": false,
+      "profiled": true,
+      "reviewed": true,
       "taxonomy_names": ["GameKit"],
       "category_ids": ["gaming"],
-      "profile_ids": [],
+      "profile_ids": ["gamekit"],
       "source_urls": [
         "https://developer.apple.com/documentation/bundleresources",
         "https://developer.apple.com/documentation/updates",
@@ -2301,14 +2391,14 @@
     {
       "canonical_id": "technology.mediadevice",
       "name": "MediaDevice",
-      "status": "catalogued",
+      "status": "reviewed",
       "discovered": false,
       "catalogued": true,
-      "profiled": false,
-      "reviewed": false,
+      "profiled": true,
+      "reviewed": true,
       "taxonomy_names": ["MediaDevice"],
       "category_ids": ["emerging_platform_technologies"],
-      "profile_ids": [],
+      "profile_ids": ["mediadevice"],
       "source_urls": [
         "https://developer.apple.com/documentation/bundleresources",
         "https://developer.apple.com/documentation/updates",
@@ -2423,14 +2513,14 @@
     {
       "canonical_id": "technology.metrickit",
       "name": "MetricKit",
-      "status": "catalogued",
+      "status": "reviewed",
       "discovered": false,
       "catalogued": true,
-      "profiled": false,
-      "reviewed": false,
+      "profiled": true,
+      "reviewed": true,
       "taxonomy_names": ["MetricKit"],
       "category_ids": ["testing_diagnostics"],
-      "profile_ids": [],
+      "profile_ids": ["metrickit"],
       "source_urls": [
         "https://developer.apple.com/documentation/bundleresources",
         "https://developer.apple.com/documentation/updates",
@@ -2477,14 +2567,14 @@
     {
       "canonical_id": "technology.musickit",
       "name": "MusicKit",
-      "status": "catalogued",
+      "status": "reviewed",
       "discovered": true,
       "catalogued": true,
-      "profiled": false,
-      "reviewed": false,
+      "profiled": true,
+      "reviewed": true,
       "taxonomy_names": ["MusicKit"],
       "category_ids": ["audio_video_media"],
-      "profile_ids": [],
+      "profile_ids": ["musickit"],
       "source_urls": [
         "https://developer.apple.com/documentation/bundleresources",
         "https://developer.apple.com/documentation/updates",
@@ -2514,14 +2604,14 @@
     {
       "canonical_id": "technology.natural-language",
       "name": "Natural Language",
-      "status": "catalogued",
+      "status": "reviewed",
       "discovered": false,
       "catalogued": true,
-      "profiled": false,
-      "reviewed": false,
+      "profiled": true,
+      "reviewed": true,
       "taxonomy_names": ["Natural Language"],
       "category_ids": ["ai_ml"],
-      "profile_ids": [],
+      "profile_ids": ["natural-language"],
       "source_urls": [
         "https://developer.apple.com/documentation/bundleresources",
         "https://developer.apple.com/documentation/updates",
@@ -2532,14 +2622,14 @@
     {
       "canonical_id": "technology.near-field-communication-tag-reading",
       "name": "Near Field Communication Tag Reading",
-      "status": "catalogued",
+      "status": "reviewed",
       "discovered": false,
       "catalogued": true,
-      "profiled": false,
-      "reviewed": false,
+      "profiled": true,
+      "reviewed": true,
       "taxonomy_names": ["Near Field Communication Tag Reading"],
       "category_ids": ["provisioning_capabilities"],
-      "profile_ids": [],
+      "profile_ids": ["core-nfc"],
       "source_urls": [
         "https://developer.apple.com/documentation/bundleresources",
         "https://developer.apple.com/documentation/updates",
@@ -2653,14 +2743,14 @@
     {
       "canonical_id": "technology.now-playing",
       "name": "NowPlaying",
-      "status": "catalogued",
+      "status": "reviewed",
       "discovered": false,
       "catalogued": true,
-      "profiled": false,
-      "reviewed": false,
+      "profiled": true,
+      "reviewed": true,
       "taxonomy_names": ["Now Playing", "NowPlaying"],
       "category_ids": ["automotive", "emerging_platform_technologies"],
-      "profile_ids": [],
+      "profile_ids": ["nowplaying"],
       "source_urls": [
         "https://developer.apple.com/documentation/bundleresources",
         "https://developer.apple.com/documentation/updates",
@@ -2697,6 +2787,24 @@
       "taxonomy_names": ["On Demand Install Capable"],
       "category_ids": ["provisioning_capabilities"],
       "profile_ids": [],
+      "source_urls": [
+        "https://developer.apple.com/documentation/bundleresources",
+        "https://developer.apple.com/documentation/updates",
+        "https://developer.apple.com/help/account/reference/supported-capabilities-ios/",
+        "https://developer.apple.com/technologies/"
+      ]
+    },
+    {
+      "canonical_id": "technology.on-demand-resources",
+      "name": "On Demand Resources",
+      "status": "reviewed",
+      "discovered": false,
+      "catalogued": true,
+      "profiled": true,
+      "reviewed": true,
+      "taxonomy_names": ["On Demand Resources"],
+      "category_ids": ["developer_delivery"],
+      "profile_ids": ["on-demand-resources"],
       "source_urls": [
         "https://developer.apple.com/documentation/bundleresources",
         "https://developer.apple.com/documentation/updates",
@@ -2751,14 +2859,14 @@
     {
       "canonical_id": "technology.passkit",
       "name": "PassKit",
-      "status": "catalogued",
+      "status": "reviewed",
       "discovered": false,
       "catalogued": true,
-      "profiled": false,
-      "reviewed": false,
+      "profiled": true,
+      "reviewed": true,
       "taxonomy_names": ["PassKit"],
       "category_ids": ["commerce_wallet"],
-      "profile_ids": [],
+      "profile_ids": ["passkit-wallet"],
       "source_urls": [
         "https://developer.apple.com/documentation/bundleresources",
         "https://developer.apple.com/documentation/updates",
@@ -2769,14 +2877,14 @@
     {
       "canonical_id": "technology.pdfkit",
       "name": "PDFKit",
-      "status": "catalogued",
+      "status": "reviewed",
       "discovered": false,
       "catalogued": true,
-      "profiled": false,
-      "reviewed": false,
+      "profiled": true,
+      "reviewed": true,
       "taxonomy_names": ["PDFKit"],
       "category_ids": ["files_documents"],
-      "profile_ids": [],
+      "profile_ids": ["pdfkit"],
       "source_urls": [
         "https://developer.apple.com/documentation/bundleresources",
         "https://developer.apple.com/documentation/updates",
@@ -2787,14 +2895,14 @@
     {
       "canonical_id": "technology.pencilkit",
       "name": "PencilKit",
-      "status": "catalogued",
+      "status": "reviewed",
       "discovered": false,
       "catalogued": true,
-      "profiled": false,
-      "reviewed": false,
+      "profiled": true,
+      "reviewed": true,
       "taxonomy_names": ["PencilKit"],
       "category_ids": ["files_documents"],
-      "profile_ids": [],
+      "profile_ids": ["pencilkit"],
       "source_urls": [
         "https://developer.apple.com/documentation/bundleresources",
         "https://developer.apple.com/documentation/updates",
@@ -2978,6 +3086,24 @@
       ]
     },
     {
+      "canonical_id": "technology.pushkit",
+      "name": "PushKit",
+      "status": "reviewed",
+      "discovered": false,
+      "catalogued": true,
+      "profiled": true,
+      "reviewed": true,
+      "taxonomy_names": ["PushKit"],
+      "category_ids": ["notifications_background"],
+      "profile_ids": ["pushkit"],
+      "source_urls": [
+        "https://developer.apple.com/documentation/bundleresources",
+        "https://developer.apple.com/documentation/updates",
+        "https://developer.apple.com/help/account/reference/supported-capabilities-ios/",
+        "https://developer.apple.com/technologies/"
+      ]
+    },
+    {
       "canonical_id": "technology.quicklook",
       "name": "QuickLook",
       "status": "catalogued",
@@ -3005,20 +3131,20 @@
       "reviewed": false,
       "taxonomy_names": [],
       "category_ids": [],
-      "profile_ids": [],
+      "profile_ids": ["realitykit"],
       "source_urls": ["https://developer.apple.com/augmented-reality/reality-composer/"]
     },
     {
       "canonical_id": "technology.realitykit",
       "name": "RealityKit",
-      "status": "catalogued",
+      "status": "reviewed",
       "discovered": true,
       "catalogued": true,
-      "profiled": false,
-      "reviewed": false,
+      "profiled": true,
+      "reviewed": true,
       "taxonomy_names": ["RealityKit"],
       "category_ids": ["graphics_spatial"],
-      "profile_ids": [],
+      "profile_ids": ["realitykit"],
       "source_urls": [
         "https://developer.apple.com/documentation/bundleresources",
         "https://developer.apple.com/documentation/realitykit/",
@@ -3195,14 +3321,14 @@
     {
       "canonical_id": "technology.shared-with-you",
       "name": "Shared with You",
-      "status": "catalogued",
+      "status": "reviewed",
       "discovered": false,
       "catalogued": true,
-      "profiled": false,
-      "reviewed": false,
+      "profiled": true,
+      "reviewed": true,
       "taxonomy_names": ["Shared with You"],
       "category_ids": ["provisioning_capabilities"],
-      "profile_ids": [],
+      "profile_ids": ["shared-with-you"],
       "source_urls": [
         "https://developer.apple.com/documentation/bundleresources",
         "https://developer.apple.com/documentation/updates",
@@ -3317,6 +3443,24 @@
       ]
     },
     {
+      "canonical_id": "technology.sound-analysis",
+      "name": "Sound Analysis",
+      "status": "reviewed",
+      "discovered": false,
+      "catalogued": true,
+      "profiled": true,
+      "reviewed": true,
+      "taxonomy_names": ["Sound Analysis"],
+      "category_ids": ["ai_ml"],
+      "profile_ids": ["soundanalysis"],
+      "source_urls": [
+        "https://developer.apple.com/documentation/bundleresources",
+        "https://developer.apple.com/documentation/updates",
+        "https://developer.apple.com/help/account/reference/supported-capabilities-ios/",
+        "https://developer.apple.com/technologies/"
+      ]
+    },
+    {
       "canonical_id": "technology.spatial-audio-profile",
       "name": "Spatial Audio Profile",
       "status": "catalogued",
@@ -3355,14 +3499,14 @@
     {
       "canonical_id": "technology.speech",
       "name": "Speech",
-      "status": "catalogued",
+      "status": "reviewed",
       "discovered": false,
       "catalogued": true,
-      "profiled": false,
-      "reviewed": false,
+      "profiled": true,
+      "reviewed": true,
       "taxonomy_names": ["Speech"],
       "category_ids": ["ai_ml"],
-      "profile_ids": [],
+      "profile_ids": ["speech"],
       "source_urls": [
         "https://developer.apple.com/documentation/bundleresources",
         "https://developer.apple.com/documentation/updates",
@@ -3373,14 +3517,14 @@
     {
       "canonical_id": "technology.spritekit",
       "name": "SpriteKit",
-      "status": "catalogued",
+      "status": "reviewed",
       "discovered": false,
       "catalogued": true,
-      "profiled": false,
-      "reviewed": false,
+      "profiled": true,
+      "reviewed": true,
       "taxonomy_names": ["SpriteKit"],
       "category_ids": ["gaming"],
-      "profile_ids": [],
+      "profile_ids": ["spritekit"],
       "source_urls": [
         "https://developer.apple.com/documentation/bundleresources",
         "https://developer.apple.com/documentation/updates",
@@ -3391,14 +3535,14 @@
     {
       "canonical_id": "technology.statereporting",
       "name": "StateReporting",
-      "status": "catalogued",
+      "status": "reviewed",
       "discovered": false,
       "catalogued": true,
-      "profiled": false,
-      "reviewed": false,
+      "profiled": true,
+      "reviewed": true,
       "taxonomy_names": ["StateReporting"],
       "category_ids": ["emerging_platform_technologies"],
-      "profile_ids": [],
+      "profile_ids": ["statereporting"],
       "source_urls": [
         "https://developer.apple.com/documentation/bundleresources",
         "https://developer.apple.com/documentation/updates",
@@ -3495,6 +3639,24 @@
         "https://developer.apple.com/documentation/updates",
         "https://developer.apple.com/help/account/reference/supported-capabilities-ios/",
         "https://developer.apple.com/swift/",
+        "https://developer.apple.com/technologies/"
+      ]
+    },
+    {
+      "canonical_id": "technology.swift-charts",
+      "name": "Swift Charts",
+      "status": "reviewed",
+      "discovered": false,
+      "catalogued": true,
+      "profiled": true,
+      "reviewed": true,
+      "taxonomy_names": ["Swift Charts"],
+      "category_ids": ["ui"],
+      "profile_ids": ["swift-charts"],
+      "source_urls": [
+        "https://developer.apple.com/documentation/bundleresources",
+        "https://developer.apple.com/documentation/updates",
+        "https://developer.apple.com/help/account/reference/supported-capabilities-ios/",
         "https://developer.apple.com/technologies/"
       ]
     },
@@ -3655,6 +3817,24 @@
       ]
     },
     {
+      "canonical_id": "technology.tipkit",
+      "name": "TipKit",
+      "status": "reviewed",
+      "discovered": false,
+      "catalogued": true,
+      "profiled": true,
+      "reviewed": true,
+      "taxonomy_names": ["TipKit"],
+      "category_ids": ["ui"],
+      "profile_ids": ["tipkit"],
+      "source_urls": [
+        "https://developer.apple.com/documentation/bundleresources",
+        "https://developer.apple.com/documentation/updates",
+        "https://developer.apple.com/help/account/reference/supported-capabilities-ios/",
+        "https://developer.apple.com/technologies/"
+      ]
+    },
+    {
       "canonical_id": "technology.translation",
       "name": "Translation",
       "status": "catalogued",
@@ -3688,14 +3868,14 @@
     {
       "canonical_id": "technology.trustinsights",
       "name": "TrustInsights",
-      "status": "catalogued",
+      "status": "reviewed",
       "discovered": false,
       "catalogued": true,
-      "profiled": false,
-      "reviewed": false,
+      "profiled": true,
+      "reviewed": true,
       "taxonomy_names": ["TrustInsights"],
       "category_ids": ["emerging_platform_technologies"],
-      "profile_ids": [],
+      "profile_ids": ["trustinsights"],
       "source_urls": [
         "https://developer.apple.com/documentation/bundleresources",
         "https://developer.apple.com/documentation/updates",
@@ -3887,14 +4067,14 @@
     {
       "canonical_id": "technology.wallet",
       "name": "Wallet",
-      "status": "catalogued",
+      "status": "reviewed",
       "discovered": false,
       "catalogued": true,
-      "profiled": false,
-      "reviewed": false,
+      "profiled": true,
+      "reviewed": true,
       "taxonomy_names": ["Wallet"],
       "category_ids": ["commerce_wallet", "provisioning_capabilities"],
-      "profile_ids": [],
+      "profile_ids": ["passkit-wallet"],
       "source_urls": [
         "https://developer.apple.com/documentation/bundleresources",
         "https://developer.apple.com/documentation/updates",
@@ -3960,14 +4140,14 @@
     {
       "canonical_id": "technology.wi-fi-aware",
       "name": "Wi-Fi Aware",
-      "status": "catalogued",
+      "status": "reviewed",
       "discovered": false,
       "catalogued": true,
-      "profiled": false,
-      "reviewed": false,
+      "profiled": true,
+      "reviewed": true,
       "taxonomy_names": ["Wi-Fi Aware"],
       "category_ids": ["emerging_platform_technologies"],
-      "profile_ids": [],
+      "profile_ids": ["wifi-aware"],
       "source_urls": [
         "https://developer.apple.com/documentation/bundleresources",
         "https://developer.apple.com/documentation/updates",

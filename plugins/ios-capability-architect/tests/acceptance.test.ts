@@ -94,13 +94,13 @@ describe("acceptance scenarios", () => {
     expect(analysis.data.requirements[0]?.kind).toBe("product_goal");
   });
 
-  it("excludes iOS 27 beta records by default", async () => {
+  it("excludes iOS 27.2 beta records by default", async () => {
     const requirement = [
       {
         id: "req-beta",
-        kind: "ai_ml" as const,
-        description: "multimodal dynamic profiles",
-        keywords: ["multimodal", "dynamic profiles"],
+        kind: "privacy" as const,
+        description: "iOS 27.2 beta expanded tracking prompt",
+        keywords: ["expanded prompt", "ios 27.2"],
         confidence: "explicit" as const
       }
     ];
@@ -114,7 +114,7 @@ describe("acceptance scenarios", () => {
       include_beta: true,
       maximum_results_per_requirement: 10
     });
-    expect(stable.data.matches.some((match) => match.capability_id === "foundation-models-ios27-beta")).toBe(false);
-    expect(beta.data.matches.some((match) => match.capability_id === "foundation-models-ios27-beta")).toBe(true);
+    expect(stable.data.matches.some((match) => match.capability_id === "ios-27-2-beta-additions")).toBe(false);
+    expect(beta.data.matches.some((match) => match.capability_id === "ios-27-2-beta-additions")).toBe(true);
   });
 });

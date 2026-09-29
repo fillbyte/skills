@@ -33,7 +33,7 @@ Releases through `v0.9.0` used `ios-capability-architect` as both the plugin and
 
 ## Trust boundary
 
-The 193-entry discovery catalog and 46 reviewed capability profiles are intentionally separate. Catalog presence proves identity and taxonomy only. Architecture, configuration, or availability recommendations require a reviewed profile backed by dated official Apple sources.
+The 203-entry discovery catalog and 79 reviewed capability profiles are intentionally separate. Catalog presence proves identity and taxonomy only. Architecture, configuration, or availability recommendations require a reviewed profile backed by dated official Apple sources.
 
 Project-audit output contains relative paths and structured findings, not file contents. It does not prove generated build settings, signing, provisioning, managed-entitlement approval, runtime availability, real-device behavior, or App Review outcome.
 

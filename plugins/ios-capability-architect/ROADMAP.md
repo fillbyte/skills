@@ -15,7 +15,7 @@ Completion signal: every committed fixture identifies the correct target-level c
 
 ## Registry depth and maintainability
 
-- Expand from 46 reviewed profiles to at least 60 high-usage profiles selected by public Apple-platform workflows rather than arbitrary catalog order.
+- Continue expanding beyond the 79 reviewed profiles (grown from 46 with the iOS 27 refresh) into the remaining high-usage catalog-only families, selected by public Apple-platform workflows rather than arbitrary catalog order.
 - Prioritize APNs, CloudKit, Keychain, AuthenticationServices, App Attest, camera and media, maps and weather, Bluetooth and NFC, Wallet and Apple Pay, testing, accessibility, and extension families.
 - Add machine-readable provenance and change-review metadata without implying automatic factual verification.
 - Improve availability modeling for devices, hardware, regions, languages, accounts, managed entitlements, and beta SDKs.
