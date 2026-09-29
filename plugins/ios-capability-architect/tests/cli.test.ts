@@ -64,19 +64,21 @@ describe("skills-only CLI", () => {
 
   it("returns an exact catalog-only technology without promoting it to a profile", async () => {
     const output = capture();
-    await expect(runCli(["technology", "ARKit"], output.streams)).resolves.toBe(0);
+    await expect(runCli(["technology", "RoomPlan"], output.streams)).resolves.toBe(0);
     const result = JSON.parse(output.stdout()) as {
       data: { kind: string; recommendation_eligible: boolean; catalog_entry: { id: string } };
     };
     expect(result.data).toMatchObject({
       kind: "catalog_only",
       recommendation_eligible: false,
-      catalog_entry: { id: "technology.arkit" }
+      catalog_entry: { id: "technology.roomplan" }
     });
 
     const queryFallback = capture();
-    await expect(runCli(["technology", "--query", "ARKit"], queryFallback.streams)).resolves.toBe(0);
-    expect(JSON.parse(queryFallback.stdout())).toMatchObject({ data: { catalog_entry: { id: "technology.arkit" } } });
+    await expect(runCli(["technology", "--query", "RoomPlan"], queryFallback.streams)).resolves.toBe(0);
+    expect(JSON.parse(queryFallback.stdout())).toMatchObject({
+      data: { catalog_entry: { id: "technology.roomplan" } }
+    });
 
     const positionalCatalog = capture();
     await expect(runCli(["catalog", "HealthKit"], positionalCatalog.streams)).resolves.toBe(0);
@@ -116,7 +118,9 @@ describe("skills-only CLI", () => {
 
   it("keeps an exact catalog-only technology out of reviewed recommendations", async () => {
     const output = capture();
-    await expect(runCli(["resolve", "--idea", "An app using ARKit", "--limit", "5"], output.streams)).resolves.toBe(0);
+    await expect(runCli(["resolve", "--idea", "An app using RoomPlan", "--limit", "5"], output.streams)).resolves.toBe(
+      0
+    );
     const result = JSON.parse(output.stdout()) as {
       resolution: {
         data: {
@@ -128,7 +132,7 @@ describe("skills-only CLI", () => {
     expect(result.resolution.data.matches).toEqual([]);
     expect(result.resolution.data.catalog_research_leads).toHaveLength(1);
     expect(result.resolution.data.catalog_research_leads[0]?.recommendation_eligible).toBe(false);
-    expect(result.resolution.data.catalog_research_leads[0]?.catalog_entry.id).toBe("technology.arkit");
+    expect(result.resolution.data.catalog_research_leads[0]?.catalog_entry.id).toBe("technology.roomplan");
   });
 
   it("exposes availability, configuration, and privacy audits", async () => {

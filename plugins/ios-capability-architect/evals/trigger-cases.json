@@ -43,6 +43,36 @@
       "kind": "negative",
       "prompt": "Create a polished App Store screenshot composition.",
       "should_invoke": false
+    },
+    {
+      "id": "indirect-ios27-core-ai",
+      "kind": "indirect",
+      "prompt": "Can I run a converted .aimodel in the background on iOS 27, and which entitlement does the Neural Engine need?",
+      "should_invoke": true
+    },
+    {
+      "id": "indirect-ios27-uikit-migration",
+      "kind": "indirect",
+      "prompt": "Our app targets the iOS 27 SDK; what launch-screen, scene lifecycle, and canOpenURL changes affect App Store submission?",
+      "should_invoke": true
+    },
+    {
+      "id": "indirect-att-eu",
+      "kind": "indirect",
+      "prompt": "Which App Tracking Transparency prompt changes apply to EU users in the iOS 27.2 beta?",
+      "should_invoke": true
+    },
+    {
+      "id": "negative-swiftui-layout",
+      "kind": "negative",
+      "prompt": "Make this SwiftUI card layout responsive on iPad.",
+      "should_invoke": false
+    },
+    {
+      "id": "negative-core-ml-training",
+      "kind": "negative",
+      "prompt": "Tune the learning rate for my PyTorch image classifier.",
+      "should_invoke": false
     }
   ]
 }

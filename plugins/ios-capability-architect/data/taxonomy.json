@@ -13,7 +13,11 @@
       "name": "Swift and core development",
       "examples": ["Swift", "Swift Concurrency", "Foundation", "Swift Package Manager"]
     },
-    { "id": "ui", "name": "User interface", "examples": ["SwiftUI", "UIKit", "Observation", "Accessibility"] },
+    {
+      "id": "ui",
+      "name": "User interface",
+      "examples": ["SwiftUI", "UIKit", "Observation", "Accessibility", "TipKit", "Swift Charts"]
+    },
     {
       "id": "networking",
       "name": "Foundation and networking",
@@ -32,7 +36,7 @@
     {
       "id": "ai_ml",
       "name": "Apple Intelligence and machine learning",
-      "examples": ["Foundation Models", "Core ML", "Core AI", "Vision", "Natural Language", "Speech"]
+      "examples": ["Foundation Models", "Core ML", "Core AI", "Vision", "Natural Language", "Speech", "Sound Analysis"]
     },
     {
       "id": "system_intelligence",
@@ -52,7 +56,7 @@
     {
       "id": "notifications_background",
       "name": "Notifications and background execution",
-      "examples": ["UserNotifications", "APNs", "BackgroundTasks", "Background URLSession"]
+      "examples": ["UserNotifications", "APNs", "BackgroundTasks", "Background URLSession", "PushKit"]
     },
     {
       "id": "widgets_live_activities",
@@ -67,7 +71,7 @@
     {
       "id": "audio_video_media",
       "name": "Audio, video, and media",
-      "examples": ["AVFoundation", "Core Audio", "MediaPlayer", "MusicKit", "ShazamKit"]
+      "examples": ["AVFoundation", "Core Audio", "MediaPlayer", "MusicKit", "ShazamKit", "Core Haptics"]
     },
     {
       "id": "camera_photos_vision",
@@ -77,14 +81,25 @@
     {
       "id": "nearby_accessories",
       "name": "Nearby devices and accessories",
-      "examples": ["Core Bluetooth", "Nearby Interaction", "Core NFC", "MultipeerConnectivity", "AccessorySetupKit"]
+      "examples": [
+        "Core Bluetooth",
+        "Nearby Interaction",
+        "Core NFC",
+        "MultipeerConnectivity",
+        "AccessorySetupKit",
+        "AudioAccessoryKit"
+      ]
     },
     {
       "id": "network_extensions",
       "name": "Advanced networking and extensions",
       "examples": ["NetworkExtension", "VPN", "DNS Proxy", "Content Filter"]
     },
-    { "id": "home_matter", "name": "Home and Matter", "examples": ["HomeKit", "Matter", "MatterSupport"] },
+    {
+      "id": "home_matter",
+      "name": "Home and Matter",
+      "examples": ["HomeKit", "Matter", "MatterSupport"]
+    },
     {
       "id": "graphics_spatial",
       "name": "Graphics, AR, and spatial",
@@ -123,7 +138,14 @@
     {
       "id": "privacy_integrity",
       "name": "Privacy and app integrity",
-      "examples": ["Privacy Manifests", "Required Reason APIs", "AppTrackingTransparency", "App Attest", "DeviceCheck"]
+      "examples": [
+        "Privacy Manifests",
+        "Required Reason APIs",
+        "AppTrackingTransparency",
+        "App Attest",
+        "DeviceCheck",
+        "Enhanced Security"
+      ]
     },
     {
       "id": "testing_diagnostics",
@@ -133,7 +155,7 @@
     {
       "id": "developer_delivery",
       "name": "Development and delivery tools",
-      "examples": ["Xcode", "Simulator", "TestFlight", "App Store Connect"]
+      "examples": ["Xcode", "Simulator", "TestFlight", "App Store Connect", "Background Assets", "On Demand Resources"]
     },
     {
       "id": "provisioning_capabilities",
@@ -195,7 +217,8 @@
         "Time Sensitive Notifications",
         "Wallet",
         "WeatherKit",
-        "Wireless Accessory Configuration"
+        "Wireless Accessory Configuration",
+        "Background Inference entitlement"
       ]
     },
     {

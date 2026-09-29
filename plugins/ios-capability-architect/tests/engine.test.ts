@@ -63,15 +63,15 @@ describe("read-only architecture tools", () => {
       allow_beta: false
     });
     const betaRejected = await checkAvailability({
-      capability_ids: ["foundation-models-ios27-beta"],
+      capability_ids: ["ios-27-2-beta-additions"],
       platform: "iOS",
-      os_version: "27.0",
+      os_version: "27.2",
       allow_beta: false
     });
     const betaAllowed = await checkAvailability({
-      capability_ids: ["foundation-models-ios27-beta"],
+      capability_ids: ["ios-27-2-beta-additions"],
       platform: "iOS",
-      os_version: "27.0",
+      os_version: "27.2",
       allow_beta: true
     });
     const deprecated = await checkAvailability({
@@ -219,8 +219,8 @@ describe("read-only architecture tools", () => {
         {
           id: "req-discovery",
           kind: "product_goal",
-          description: "Compare ARKit with AlarmKit",
-          keywords: ["ARKit", "AlarmKit"],
+          description: "Compare RoomPlan with AlarmKit",
+          keywords: ["RoomPlan", "AlarmKit"],
           confidence: "explicit"
         }
       ],
@@ -229,7 +229,7 @@ describe("read-only architecture tools", () => {
     });
     expect(orderedLeads.data.catalog_research_leads.map(({ catalog_entry }) => catalog_entry.name)).toEqual([
       "AlarmKit",
-      "ARKit"
+      "RoomPlan"
     ]);
   });
 

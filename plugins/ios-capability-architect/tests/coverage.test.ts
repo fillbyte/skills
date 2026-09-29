@@ -9,10 +9,10 @@ describe("Apple technology catalog coverage", () => {
     expect(catalog.length).toBeGreaterThanOrEqual(170);
     expect(new Set(catalog.map((entry) => entry.id)).size).toBe(catalog.length);
     expect(coverage.catalogued_technology_count).toBe(catalog.length);
-    expect(coverage.profiled_technology_count).toBe(48);
-    expect(coverage.catalog_only_technology_count).toBe(145);
-    expect(coverage.profile_coverage_percent).toBe(24.9);
-    expect(coverage.verified_profile_count).toBe(46);
+    expect(coverage.profiled_technology_count).toBe(83);
+    expect(coverage.catalog_only_technology_count).toBe(120);
+    expect(coverage.profile_coverage_percent).toBe(40.9);
+    expect(coverage.verified_profile_count).toBe(79);
     expect(coverage.complete_profile_count + coverage.partial_profile_count).toBe(coverage.verified_profile_count);
     expect(coverage.partial_profile_count).toBeGreaterThan(0);
     expect(coverage.official_index_sources).toHaveLength(4);

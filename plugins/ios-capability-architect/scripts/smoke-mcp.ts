@@ -60,12 +60,12 @@ try {
 
   const technologyResponse = await client.callTool({
     name: "get_apple_technology",
-    arguments: { technology_id_or_name: "ARKit" }
+    arguments: { technology_id_or_name: "RoomPlan" }
   });
   if (technologyResponse.isError) throw new Error("get_apple_technology returned an MCP error");
   const technologyEnvelope = technologyResponse.structuredContent as { data?: { kind?: string } } | undefined;
   if (technologyEnvelope?.data?.kind !== "catalog_only") {
-    throw new Error("ARKit did not return the expected catalog-only result");
+    throw new Error("RoomPlan did not return the expected catalog-only result");
   }
 
   const auditResponse = await client.callTool({
@@ -106,7 +106,7 @@ try {
         server_version: expectedVersion,
         tool_count: tools.tools.length,
         profile_smoke: "healthkit",
-        technology_smoke: "ARKit",
+        technology_smoke: "RoomPlan",
         project_audit_smoke: "swiftdata",
         availability_smoke: "foundation-models",
         structured_output: true
