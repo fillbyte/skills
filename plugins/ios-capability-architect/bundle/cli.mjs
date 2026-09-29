@@ -26454,7 +26454,7 @@ var getProfileInputSchema = external_exports.object({
   capability_id_or_name: capabilityIdentifierSchema.describe("Exact or recognizable reviewed capability ID or name.")
 });
 var getAppleTechnologyInputSchema = external_exports.object({
-  technology_id_or_name: external_exports.string().trim().min(1).max(200).describe("Exact Apple technology catalog ID or name, such as HealthKit or technology.healthkit.")
+  technology_id_or_name: external_exports.string().trim().min(1).max(200).describe("Exact Apple technology catalog ID or name, such as RoomPlan or technology.roomplan.")
 });
 var technologyCatalogEntrySchema = external_exports.object({
   id: external_exports.string().min(1),
