@@ -8,10 +8,12 @@ import type { CapabilityRecord } from "@/types.js";
 
 vi.mock("@/registry.js", async (importOriginal) => {
   const actual = await importOriginal<typeof RegistryModule>();
-  const records = (await actual.loadRegistry()).map((record): CapabilityRecord => ({
-    ...record,
-    stable_or_beta: "unknown"
-  }));
+  const records = (await actual.loadRegistry()).map(
+    (record): CapabilityRecord => ({
+      ...record,
+      stable_or_beta: "unknown"
+    })
+  );
   return {
     ...actual,
     loadRegistry: async () => records,

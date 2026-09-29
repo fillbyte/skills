@@ -130,7 +130,7 @@ describe("capability registry", () => {
     for (const id of expected) {
       const record = await findRecord(id);
       expect(record).toMatchObject({ id, stable_or_beta: "stable" });
-      expect(record?.last_verified_at).toBe(["avfoundation", "photokit"].includes(id) ? "2026-09-30" : "2026-09-30");
+      expect(record?.last_verified_at).toBe("2026-09-30");
       expect(record?.official_documentation.length).toBeGreaterThan(0);
       expect(record?.sdk_availability).toContain("Xcode 26.6 and SDK 26.5");
       expect(record?.sdk_availability).toMatch(/Xcode 27|iOS 27 SDK/);

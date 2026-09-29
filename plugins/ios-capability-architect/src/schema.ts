@@ -235,7 +235,7 @@ export const getAppleTechnologyInputSchema = z.object({
     .trim()
     .min(1)
     .max(200)
-    .describe("Exact Apple technology catalog ID or name, such as HealthKit or technology.healthkit.")
+    .describe("Exact Apple technology catalog ID or name, such as RoomPlan or technology.roomplan.")
 });
 
 export const technologyCatalogEntrySchema = z.object({
