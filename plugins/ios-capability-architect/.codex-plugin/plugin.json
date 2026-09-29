@@ -32,7 +32,7 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "iOS Capability Architect",
-    "shortDescription": "Plan Apple capabilities and audit Xcode projects",
+    "shortDescription": "Plan Apple app capabilities",
     "longDescription": "Analyze an Apple-platform app idea or existing project, map requirements to documented technologies, separate permissions from capabilities and entitlements, audit source configuration without modifying it, identify privacy and App Store risks, and produce a practical SwiftUI-first architecture and delivery plan.",
     "developerName": "Fillbyte",
     "category": "Developer Tools",
@@ -40,6 +40,7 @@
       "Read"
     ],
     "websiteURL": "https://skills.sh/fillbyte/skills/ios-capability-architect",
+    "supportURL": "https://github.com/fillbyte/skills/blob/main/SUPPORT.md",
     "privacyPolicyURL": "https://github.com/fillbyte/skills/blob/main/PRIVACY.md",
     "termsOfServiceURL": "https://github.com/fillbyte/skills/blob/main/TERMS.md",
     "defaultPrompt": [

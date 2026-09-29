@@ -63,6 +63,7 @@ jobs:
           mkdir release-assets
           npm pack --workspace plugins/ios-capability-architect --pack-destination release-assets
           cp "dist/skills-only/ios-capability-architect-skill-$package_version.zip" release-assets/
+          cp "dist/skills-only/ios-capability-architect-plugin-$package_version.zip" release-assets/
           npm run --silent release:sbom > "release-assets/ios-capability-architect-$RELEASE_TAG.sbom.cdx.json"
           package_path=$(find release-assets -maxdepth 1 -name '*.tgz' -print -quit)
           {

@@ -79,6 +79,35 @@ execFileSync("zip", ["-X", "-q", archivePath, "-@"], {
   input: `${files.join("\n")}\n`
 });
 
+// Portal-format plugin package: `.codex-plugin/plugin.json` plus the skills-only tree under `skills/`.
+// The local MCP server is deliberately absent; an MCP server cannot be added to a skills-only plugin later.
+const pluginPackageRoot = join(outputRoot, "plugin", "ios-capability-architect");
+const pluginArchiveName = `ios-capability-architect-plugin-${packageMetadata.version}.zip`;
+const pluginArchivePath = join(outputRoot, pluginArchiveName);
+await rm(join(outputRoot, "plugin"), { recursive: true, force: true });
+await rm(pluginArchivePath, { force: true });
+await mkdir(join(pluginPackageRoot, ".codex-plugin"), { recursive: true });
+await cp(skillRoot, join(pluginPackageRoot, "skills", "ios-capability-architect"), { recursive: true });
+await cp(join(pluginRoot, "LICENSE"), join(pluginPackageRoot, "LICENSE"));
+const submissionManifest = JSON.parse(await readFile(join(pluginRoot, ".codex-plugin", "plugin.json"), "utf8"));
+delete submissionManifest.mcpServers;
+await writeFile(
+  join(pluginPackageRoot, ".codex-plugin", "plugin.json"),
+  `${JSON.stringify(submissionManifest, null, 2)}\n`,
+  "utf8"
+);
+const pluginFiles = await listFiles(pluginPackageRoot);
+for (const file of pluginFiles) {
+  const path = join(pluginPackageRoot, file);
+  await chmod(path, file.endsWith("scripts/ios-capability-architect.mjs") ? 0o755 : 0o644);
+  await utimes(path, normalizedTimestamp, normalizedTimestamp);
+}
+execFileSync("zip", ["-X", "-q", pluginArchivePath, "-@"], {
+  cwd: pluginPackageRoot,
+  env: { ...process.env, TZ: "UTC" },
+  input: `${pluginFiles.join("\n")}\n`
+});
+
 const archiveStats = await stat(archivePath);
 process.stdout.write(
   `${JSON.stringify(
@@ -88,7 +117,10 @@ process.stdout.write(
       skill_root: skillRoot,
       archive: archivePath,
       files: files.length,
-      archive_bytes: archiveStats.size
+      archive_bytes: archiveStats.size,
+      plugin_archive: pluginArchivePath,
+      plugin_files: pluginFiles.length,
+      plugin_archive_bytes: (await stat(pluginArchivePath)).size
     },
     null,
     2

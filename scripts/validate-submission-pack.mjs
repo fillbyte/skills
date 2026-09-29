@@ -50,7 +50,19 @@ if (listing.privacy_policy_url !== pluginManifest.interface?.privacyPolicyURL) {
 if (listing.terms_url !== pluginManifest.interface?.termsOfServiceURL) {
   throw new Error("Submission and plugin terms URLs must match");
 }
-if (listing.short_description.length > 100) throw new Error("Submission short description exceeds 100 characters");
+if (listing.short_description.length > 30)
+  throw new Error("Submission short description exceeds the portal's 30 characters");
+if (listing.name.length > 30) throw new Error("Submission display name exceeds the portal's 30 characters");
+if (listing.publisher.length > 80) throw new Error("Submission publisher exceeds the portal's 80 characters");
+if (listing.support_url !== pluginManifest.interface?.supportURL) {
+  throw new Error("Submission and plugin support URLs must match");
+}
+const manifestPrompts = pluginManifest.interface?.defaultPrompt;
+if (!Array.isArray(manifestPrompts) || manifestPrompts.length > 3 || manifestPrompts.some((p) => p.length > 128)) {
+  throw new Error("Plugin default prompts must be at most three entries of 128 characters");
+}
+if (!/^\d+\.\d+\.\d+$/.test(pluginManifest.version)) throw new Error("Plugin manifest needs a semantic version");
+if (!/^[a-z0-9-]{1,64}$/.test(pluginManifest.name)) throw new Error("Plugin manifest name violates the portal pattern");
 if (listing.long_description.length < 200 || listing.long_description.length > 1200) {
   throw new Error("Submission long description must contain 200 through 1200 characters");
 }
