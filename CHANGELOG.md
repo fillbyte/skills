@@ -2,6 +2,18 @@
 
 All notable changes to this project are documented in this file. The project follows [Semantic Versioning](https://semver.org/) and uses Conventional Commit messages to drive release automation.
 
+## [1.1.0](https://github.com/fillbyte/skills/compare/v1.0.1...v1.1.0) (2026-09-29)
+
+
+### Features
+
+* **registry:** refresh capability registry for iOS 27 and Xcode 27 ([#60](https://github.com/fillbyte/skills/issues/60)) ([2df2982](https://github.com/fillbyte/skills/commit/2df298280390ba9b31123641ce850eb66387bbdf))
+
+
+### Bug Fixes
+
+* **submission:** build a portal-format plugin package within listing limits ([#64](https://github.com/fillbyte/skills/issues/64)) ([10b4580](https://github.com/fillbyte/skills/commit/10b458029a909e04d613893e2fe7440b6ccfd3f4))
+
 ## [1.0.1](https://github.com/fillbyte/skills/compare/v1.0.0...v1.0.1) (2026-09-04)
 
 
