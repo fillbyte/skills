@@ -1,6 +1,6 @@
 {
   "name": "@fillbyte/ios-capability-architect",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "type": "module",
   "description": "Apple-platform agent skill, Codex plugin, MCP server, and CLI for evidence-backed capability architecture and Xcode audits.",
   "license": "MIT",
