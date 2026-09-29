@@ -153,6 +153,56 @@ try {
   await rm(symlinkRoot, { recursive: true, force: true });
 }
 
+const pluginArchivePath = join(outputRoot, `ios-capability-architect-plugin-${packageMetadata.version}.zip`);
+const pluginEntries = execFileSync("unzip", ["-Z1", pluginArchivePath], { encoding: "utf8" })
+  .trim()
+  .split("\n")
+  .filter(Boolean);
+if (pluginEntries.some((entry) => entry.startsWith("/") || entry.split("/").includes(".."))) {
+  throw new Error("Plugin archive contains an unsafe path");
+}
+if (
+  pluginEntries.some((entry) => entry === ".mcp.json" || entry.endsWith("server.mjs") || entry.endsWith(".app.json"))
+) {
+  throw new Error("Skills-only plugin archive contains an MCP server, MCP configuration, or app reference");
+}
+for (const requiredPath of [
+  ".codex-plugin/plugin.json",
+  "LICENSE",
+  ...requiredPaths.map((p) => `skills/ios-capability-architect/${p}`)
+]) {
+  if (!pluginEntries.includes(requiredPath)) throw new Error(`Plugin archive is missing ${requiredPath}`);
+}
+const pluginManifest = JSON.parse(
+  execFileSync("unzip", ["-p", pluginArchivePath, ".codex-plugin/plugin.json"], { encoding: "utf8" })
+);
+if (pluginManifest.version !== packageMetadata.version) throw new Error("Plugin manifest version mismatch");
+if (pluginManifest.mcpServers !== undefined) throw new Error("Skills-only plugin manifest must not declare mcpServers");
+if (pluginManifest.skills !== "./skills/") throw new Error("Plugin manifest must declare ./skills/");
+if (!/^[a-z0-9-]{1,64}$/.test(pluginManifest.name)) throw new Error("Plugin manifest name is invalid");
+const pluginInterface = pluginManifest.interface ?? {};
+for (const [field, limit] of [
+  ["displayName", 30],
+  ["shortDescription", 30],
+  ["longDescription", 4000],
+  ["developerName", 80]
+]) {
+  const value = pluginInterface[field];
+  if (typeof value !== "string" || !value.trim() || value.length > limit) {
+    throw new Error(`Plugin interface.${field} must be 1-${limit} characters`);
+  }
+}
+for (const field of ["websiteURL", "supportURL", "privacyPolicyURL", "termsOfServiceURL"]) {
+  if (!String(pluginInterface[field] ?? "").startsWith("https://"))
+    throw new Error(`Plugin interface.${field} must be HTTPS`);
+}
+for (const field of ["composerIcon", "logo"]) {
+  const target = String(pluginInterface[field] ?? "").replace(/^\.\//, "");
+  if (!pluginEntries.includes(target))
+    throw new Error(`Plugin interface.${field} points outside the archive: ${target}`);
+}
+const pluginArchive = await readFile(pluginArchivePath);
+
 const archive = await readFile(archivePath);
 process.stdout.write(
   `${JSON.stringify(
@@ -163,6 +213,8 @@ process.stdout.write(
       expanded_bytes: inventory.bytes,
       archive_bytes: archive.length,
       sha256: createHash("sha256").update(archive).digest("hex"),
+      plugin_archive_bytes: pluginArchive.length,
+      plugin_sha256: createHash("sha256").update(pluginArchive).digest("hex"),
       cli_smoke: [
         "coverage",
         "profile:healthkit",

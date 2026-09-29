@@ -2,7 +2,7 @@
   "name": "iOS Capability Architect",
   "publisher": "Fillbyte",
   "category": "Developer Tools",
-  "short_description": "Plan Apple capabilities and audit Xcode projects",
+  "short_description": "Plan Apple app capabilities",
   "long_description": "Turn an iOS or Apple-platform product idea into an implementable capability map, SwiftUI-first architecture, permission and entitlement inventory, privacy review, delivery sequence, and test plan. When a local project is in scope, compare selected capability requirements with Xcode, XcodeGen, plist, entitlement, xcconfig, Swift package, and privacy-manifest source configuration through a bounded read-only audit. The plugin distinguishes verified profiles from discovery-only catalog entries, preserves unknown and manual-review states, and links material platform claims to official Apple sources.",
   "website_url": "https://github.com/fillbyte/skills",
   "support_url": "https://github.com/fillbyte/skills/blob/main/SUPPORT.md",

@@ -4,14 +4,14 @@ This directory is the review source of truth for the first public, skills-only s
 
 ## Submission type
 
-Select **Skills only**. Upload the versioned archive produced by:
+Select **Skills only** and upload the plugin package produced by:
 
 ```bash
 npm run build
 npm run smoke:skills
 ```
 
-The archive is written to `dist/skills-only/ios-capability-architect-skill-<version>.zip`. The GitHub release workflow attaches the same skills archive alongside the npm package, SBOM, and checksums.
+The plugin package is written to `dist/skills-only/ios-capability-architect-plugin-<version>.zip`. It contains `.codex-plugin/plugin.json` (the repository manifest without `mcpServers`), the skill under `skills/ios-capability-architect/` with its local CLI and data, and the license. The portal limits are enforced by `npm run validate:submission` and `npm run smoke:skills`: display name and short description at most 30 characters, at most three default prompts of 128 characters, HTTPS listing URLs, and existing icon paths. The GitHub release workflow attaches the same plugin package, the standalone skill archive, the npm package, SBOM, and checksums. Because an MCP server cannot be added to a skills-only plugin later, the local stdio server stays out of this package.
 
 The public submission intentionally excludes the local stdio MCP server. A remote MCP server cannot inspect a user's local Xcode project by accepting a local path, and uploading project contents would materially change the product's privacy boundary. The skills-only archive instead includes a dependency-free local CLI that runs under the host's normal workspace controls.
 
@@ -22,7 +22,7 @@ The public submission intentionally excludes the local stdio MCP server. A remot
 - `test-cases.json`: five positive and three negative reviewer scenarios.
 - `availability.json`: launch-region policy and language/support facts.
 - `policy-attestations.md`: evidence for the policy answers that require human confirmation in the portal.
-- `release-notes.md`: initial submission notes.
+- `release-notes.md`: version notes for the portal.
 - `reviewer-guide.md`: reproducible local checks and known limitations.
 - `assets/icon.svg`: vector source for the listing icon. Use the generated `icon-512.png` upload asset.
 
